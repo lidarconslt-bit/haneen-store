@@ -28,6 +28,10 @@
       .sort(function (a, b) { return (a.order || 0) - (b.order || 0); }); }
   function byId(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
 
+  /* منتج «قريبًا» يُعرض في البطاقات ولا يُطلب — هذا هو الحارس الوحيد لقابلية الطلب */
+  function orderable(p) { return !!p && p.enabled !== false && p.comingSoon !== true; }
+  function orderableProduct(id) { var p = byId(CFG.products || [], id); return orderable(p) ? p : null; }
+
   /* ---------- التحميل ---------- */
   fetch('config.json?v=' + Date.now())
     .then(function (r) { if (!r.ok) throw new Error('config ' + r.status); return r.json(); })
@@ -127,11 +131,11 @@
 
   function renderProducts() {
     $('#products-grid').innerHTML = on(CFG.products).map(function (p, i) {
-      var soon = !!p.badge;
+      var soon = !orderable(p);
       return '<button type="button" class="card product' + (soon ? ' is-soon' : '') + '"' +
         (soon ? ' disabled' : ' data-product="' + esc(p.id) + '"') +
         ' data-reveal="card" style="--d:' + (i * 55) + 'ms">' +
-        (soon ? '<span class="badge product__badge">' + esc(p.badge) + '</span>' : '') +
+        (p.badge ? '<span class="badge product__badge">' + esc(p.badge) + '</span>' : '') +
         '<span class="product__icon">' + icon(p.icon) + '</span>' +
         '<span class="product__name">' + esc(p.name) + '</span>' +
         '<span class="product__desc">' + esc(p.desc) + '</span>' +
@@ -147,6 +151,7 @@
   }
 
   function pickProductAndGo(productId) {
+    if (!orderableProduct(productId)) return;
     var el = $('#opt-product input[value="' + productId + '"]');
     if (el) { el.checked = true; state.product = productId; }
     calcTotal();
@@ -343,7 +348,8 @@
   function renderForm() {
     var products = on(CFG.products);
 
-    $('#opt-product').innerHTML = products.map(function (p) {
+    /* «قريبًا» لا يظهر ضمن خيارات الطلب إطلاقًا */
+    $('#opt-product').innerHTML = products.filter(orderable).map(function (p) {
       return optHtml('product', p.id, p.name, p.price + ' ريال');
     }).join('');
 
@@ -463,6 +469,8 @@
       ['product', 'size', 'level'].forEach(function (g) {
         if (!$('#opt-' + g + ' input:checked')) bad($('#opt-' + g));
       });
+      /* حارس ضد حالة مزروعة يدويًا أو مسودة قديمة تحمل منتج «قريبًا» */
+      if (state.product && !orderableProduct(state.product)) bad($('#opt-product'));
       /* الأسلوب: إما اختيار واحد على الأقل، أو وصف أسلوب آخر */
       var hasStyle = state.styles.length > 0;
       var hasOther = state.otherStyle && $('#f-other-style-text').value.trim().length >= 3;
@@ -490,7 +498,7 @@
   }
 
   function calcTotal() {
-    var p = byId(CFG.products || [], state.product);
+    var p = orderableProduct(state.product);
     var pr = CFG.pricing || {};
     var free = pr.freeStyles == null ? 2 : pr.freeStyles;
     var unit = pr.extraStylePrice == null ? 15 : pr.extraStylePrice;
@@ -567,6 +575,13 @@
     if (!validateStep(3)) return;
     if ($('#f-website').value) return; /* مصيدة السبام */
 
+    /* آخر حاجز قبل الإرسال: لا يُتم طلب لمنتج غير متاح مهما كان مصدر الاختيار */
+    if (!orderableProduct(state.product)) {
+      $('#submit-error').textContent = 'هذا المنتج غير متاح للطلب حاليًا. اختر نوع تصميم آخر.';
+      gotoStep(1);
+      return;
+    }
+
     var btn = $('#btn-submit');
     btn.disabled = true;
     btn.textContent = 'جارٍ الإرسال…';
@@ -606,7 +621,7 @@
   }
 
   function collect() {
-    var p = byId(CFG.products || [], state.product);
+    var p = orderableProduct(state.product);
     var sz = byId(CFG.sizes || [], state.size);
     var lv = byId(CFG.levels || [], state.level);
     var ad = CFG.addons || {}, extras = [];
@@ -617,6 +632,7 @@
       orderNo: makeOrderNo(),
       name: $('#f-name').value.trim(),
       phone: normalizePhone($('#f-phone').value),
+      productId: p ? p.id : '',
       product: p ? p.name : '',
       styles: namesOf(CFG.styles, state.styles).join('، '),
       otherStyle: state.otherStyle ? $('#f-other-style-text').value.trim() : '',
@@ -654,7 +670,7 @@
   }
 
   function collectLight() {
-    var p = byId(CFG.products || [], state.product);
+    var p = orderableProduct(state.product);
     var sz = byId(CFG.sizes || [], state.size);
     var lv = byId(CFG.levels || [], state.level);
     var ad = CFG.addons || {}, extras = [];
@@ -777,20 +793,19 @@
   function applyStatus(s) {
     STATUS = s;
     var ops = CFG.operations || {};
+    /* الإغلاق يدوي فقط (ordersOpen) — لا إغلاق تلقائي بالسعة في هذه المرحلة */
     var closed = !s.ordersOpen;
-    var full = s.remaining !== null && s.remaining <= 0;
 
-    if (closed || full) {
+    if (closed) {
       $('#order-form').style.display = 'none';
       $('#store-closed').style.display = '';
-      txt('#closed-text', closed ? ops.closedMessage : ops.capacityMessage);
+      txt('#closed-text', ops.closedMessage);
       txt('#order-capacity', '');
       return;
     }
-    /* «المتبقي» يُعرض فقط حين نعرفه فعلًا من الجدول — لا نعد بما لا نقيسه */
-    txt('#order-capacity', s.remaining !== null
-      ? 'نستقبل ' + ops.dailyCapacity + ' طلبات يوميًا — المتبقي اليوم: ' + s.remaining + '.'
-      : 'نستقبل ' + ops.dailyCapacity + ' طلبات يوميًا.');
+    /* صياغة تعكس محدودية الطاقة التشغيلية دون وعد برقم لا نقيسه */
+    txt('#order-capacity', ops.capacityNote ||
+      'نستقبل عددًا محدودًا من الطلبات يوميًا لضمان جودة التنفيذ.');
   }
 
   /* صياغة عربية سليمة لعدد التعديلات */
@@ -1043,11 +1058,13 @@
     if (Date.now() - (raw.at || 0) > 7 * 24 * 3600 * 1000) { clearDraft(); return; }
 
     var s = raw.state;
-    state.product = s.product; state.size = s.size; state.level = s.level;
+    /* مسودة محفوظة قد تحمل منتجًا صار «قريبًا» بعد حفظها — نُسقطه */
+    state.product = orderableProduct(s.product) ? s.product : '';
+    state.size = s.size; state.level = s.level;
     state.styles = s.styles || []; state.otherStyle = !!s.otherStyle;
     state.audiences = s.audiences || []; state.extras = s.extras || {};
 
-    check('product', s.product); check('size', s.size); check('level', s.level);
+    check('product', state.product); check('size', s.size); check('level', s.level);
     (state.styles).forEach(function (v) { check('style', v); });
     (state.audiences).forEach(function (v) { check('audience', v); });
     Object.keys(state.extras).forEach(function (k) {

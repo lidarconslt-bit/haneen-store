@@ -52,6 +52,7 @@
   "operations": {
     "ordersOpen": true,
     "dailyCapacity": 5,
+    "capacityNote": "نستقبل عددًا محدودًا من الطلبات يوميًا لضمان جودة التنفيذ.",
     "deliveryTime": "24–48 ساعة",
     "rushDeliveryTime": "12 ساعة",
     "freeRevisions": 1,
@@ -182,6 +183,7 @@
       "price": 149,
       "icon": "slides",
       "badge": "قريبًا",
+      "comingSoon": true,
       "enabled": true,
       "order": 7
     }

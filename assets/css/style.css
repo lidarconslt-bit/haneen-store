@@ -255,8 +255,8 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .hero__trust { margin-top: var(--sp-4); display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); font-size: var(--fs-sm); color: var(--color-text-muted); }
 .hero__trust li { display: flex; align-items: center; gap: 6px; }
 .hero__trust svg { width: 16px; height: 16px; color: var(--color-primary); flex: none; }
-.hero__media { margin-top: var(--sp-6); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
-.hero__media img { border-radius: var(--r-md); border: 1px solid var(--color-border); aspect-ratio: 3/4; object-fit: cover; background: var(--color-surface); }
+.hero__media { margin-top: var(--sp-6); display: grid; grid-template-columns: 1fr .4fr; gap: var(--sp-2); align-items: start; }
+.hero__media img { width: 100%; height: auto; border-radius: var(--r-md); border: 1px solid var(--color-border); aspect-ratio: 3/4; object-fit: cover; background: var(--color-surface); }
 .hero__media img:nth-child(3) { display: none; }
 
 /* ============ شريط الثقة ============ */
@@ -814,6 +814,7 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
 /* ============ الاستجابة ============ */
 @media (min-width: 560px) {
   .gallery, .styles { grid-template-columns: repeat(3, 1fr); }
+  .hero__media { grid-template-columns: repeat(3, 1fr); }
   .hero__media img:nth-child(3) { display: block; }
   .trustbar ul { grid-template-columns: repeat(4, 1fr); }
   .opts--3 { grid-template-columns: repeat(3, 1fr); }
