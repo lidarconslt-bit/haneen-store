@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" width="320" height="240" role="img" aria-label="أسلوب تعليمي">
+<rect width="320" height="240" fill="#DCE7DE"/>
+<circle cx="86" cy="92" r="38" fill="#4F7360" opacity=".85"/>
+<rect x="140" y="62" width="120" height="14" rx="7" fill="#4F7360" opacity=".55"/>
+<rect x="140" y="88" width="92" height="14" rx="7" fill="#4F7360" opacity=".35"/>
+<rect x="140" y="114" width="108" height="14" rx="7" fill="#4F7360" opacity=".25"/>
+<rect x="48" y="152" width="224" height="46" rx="10" fill="#4F7360" opacity=".2"/>
+<text x="160" y="182" text-anchor="middle" font-family="IBM Plex Sans Arabic, Tahoma, sans-serif" font-size="18" font-weight="600" fill="#2A3F33" direction="rtl">تعليمي</text>
+</svg>
