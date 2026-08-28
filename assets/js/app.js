@@ -291,17 +291,16 @@
     $('#plans-grid').innerHTML = on(CFG.packages).map(function (p, i) {
       return '<article class="card plan' + (p.featured ? ' is-featured' : '') + '" data-reveal style="--d:' + (i * 90) + 'ms">' +
         (p.featured ? '<span class="plan__flag">الأكثر طلبًا</span>' : '') +
-        '<div><div class="plan__name">' + esc(p.name) + '</div>' +
+        '<div class="plan__head"><div class="plan__name">' + esc(p.name) + '</div>' +
         '<div class="plan__note">' + esc(p.note || '') + '</div></div>' +
-        '<div class="plan__price"><span class="num">' + p.price + '</span><span>ريال</span></div>' +
-        '<div class="plan__sep"></div>' +
         '<ul class="plan__items">' + (p.items || []).map(function (it) {
           return '<li>' + icon('check') + '<span>' + esc(it) + '</span></li>';
         }).join('') + '</ul>' +
+        '<div class="plan__sep"></div>' +
+        '<div class="plan__price"><span class="num">' + p.price + '</span><span>ريال</span></div>' +
         '<a href="' + esc(waLink(packageMessage(p))) + '" class="btn btn--primary"' +
-        ' target="_blank" rel="noopener">' +
-        '<svg class="btn__wa" aria-hidden="true"><use href="#i-wa"/></svg>' +
-        'اطلبها الآن</a></article>';
+        ' target="_blank" rel="noopener">اطلبها الآن</a>' +
+        '<span class="plan__dest">يفتح محادثة واتساب</span></article>';
     }).join('');
 
     var ops = CFG.operations || {};
@@ -990,6 +989,15 @@
     new MutationObserver(function () {
       fab.classList.toggle('is-hidden', success.classList.contains('is-shown'));
     }).observe(success, { attributes: true, attributeFilter: ['class'] });
+
+    /* لا يظهر من خلف طبقة النوافذ */
+    function syncDialogs() {
+      var open = $$('dialog').some(function (d) { return d.open; });
+      fab.classList.toggle('is-behind', open);
+    }
+    $$('dialog').forEach(function (d) {
+      new MutationObserver(syncDialogs).observe(d, { attributes: true, attributeFilter: ['open'] });
+    });
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var nudged = false;

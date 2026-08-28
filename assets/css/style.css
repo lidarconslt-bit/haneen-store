@@ -141,7 +141,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn--whatsapp:hover { background: #1EB859; }
 
 .btn--block { width: 100%; }
-.btn--sm { padding: 9px 16px; min-height: 40px; font-size: var(--fs-sm); }
+.btn--sm { padding: 11px 18px; min-height: 44px; font-size: var(--fs-sm); }
 .btn[disabled] { opacity: .5; cursor: not-allowed; transform: none; }
 
 /* ============ البطاقات ============ */
@@ -278,11 +278,11 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .idea__item p { font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.6; }
 
 /* ============ الأساليب + المعرض ============ */
-.filters { display: flex; gap: var(--sp-2); overflow-x: auto; padding-bottom: var(--sp-2); margin-bottom: var(--sp-4); scrollbar-width: none; }
+.filters { display: flex; align-items: center; gap: var(--sp-2); overflow-x: auto; padding-bottom: var(--sp-2); margin-bottom: var(--sp-4); scrollbar-width: none; }
 .filters::-webkit-scrollbar { display: none; }
 .chip {
   flex: none; font-family: inherit; font-size: var(--fs-sm); font-weight: 500;
-  padding: 9px 16px; border-radius: var(--r-pill); cursor: pointer;
+  padding: 0 18px; min-height: 44px; border-radius: var(--r-pill); cursor: pointer;
   background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-muted);
   transition: all var(--dur) var(--ease);
 }
@@ -367,7 +367,8 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 /* شريط لوني علوي رفيع يعطي البطاقة انتماءً للهوية بدل السطح الأبيض المسطّح */
 /* رأس ملوّن خفيف يمنح البطاقة عمقًا بدل السطح الأبيض المسطّح */
 .plan {
-  background: linear-gradient(var(--color-bg-alt) 0 92px, var(--color-surface) 92px);
+  background: linear-gradient(var(--color-bg-alt) 0 96px, var(--color-surface) 96px);
+  box-shadow: 0 1px 3px rgba(34, 43, 38, .04);
 }
 .plan::before {
   content: ''; position: absolute; top: 0; inset-inline: 0; height: 4px;
@@ -395,15 +396,29 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .plan__note { font-size: var(--fs-xs); color: var(--color-text-muted); margin-top: 2px; }
 .plan__price {
   font-size: 2.75rem; font-weight: 700; color: var(--color-primary-dark);
-  display: flex; align-items: baseline; gap: 8px; line-height: 1.1;
+  display: flex; align-items: baseline; justify-content: center; gap: 8px;
+  line-height: 1.05; padding-block: var(--sp-2);
 }
 .plan__price span { font-size: var(--fs-md); font-weight: 500; color: var(--color-text-muted); }
 .plan__sep { height: 1px; background: var(--color-border); margin-block: var(--sp-1); }
-.plan__items { display: grid; gap: var(--sp-2); font-size: var(--fs-sm); }
+.plan__head { padding-bottom: var(--sp-1); }
+.plan__items { display: grid; gap: var(--sp-2); font-size: var(--fs-sm); flex: 1; }
+.plan__dest {
+  font-size: var(--fs-xs); color: var(--color-text-muted);
+  text-align: center; margin-top: calc(var(--sp-2) * -1);
+}
+.plan__sep { margin-block: var(--sp-2) 0; }
 .plan__items li { display: flex; gap: var(--sp-2); align-items: flex-start; line-height: 1.55; }
 .plan__items svg { width: 16px; height: 16px; color: var(--color-primary); flex: none; margin-top: 5px; }
-.plan .btn { margin-top: auto; }
+.plan .btn { margin-top: var(--sp-1); }
 .pricing__note { margin-top: var(--sp-5); font-size: var(--fs-xs); color: var(--color-text-muted); text-align: center; }
+
+/* النقاط الثلاث: انتقلت من الحكاية إلى «كيف نعمل» لأنها تشرح آلية الخدمة */
+.howsplit {
+  display: grid; gap: var(--sp-4);
+  margin-bottom: var(--sp-6); padding-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--color-border);
+}
 
 /* ============ الخطوات ============ */
 .steps { display: grid; gap: var(--sp-4); counter-reset: s; }
@@ -616,22 +631,17 @@ input:focus, select:focus, textarea:focus {
   width: 320px; height: 320px; border-radius: 50%;
   background: var(--color-primary-light); opacity: .5;
 }
-.story__inner { position: relative; padding-block: var(--sp-7); }
-.story__head { max-width: 56ch; margin-inline: auto; text-align: center; }
-.story__mark { height: 46px; width: auto; aspect-ratio: 776 / 271; margin: 0 auto var(--sp-4); }
-.story p { font-size: var(--fs-lg); line-height: 1.95; color: var(--color-text); }
-.story p + p { margin-top: var(--sp-3); }
+.story__inner { position: relative; padding-block: var(--sp-6); }
+.story__head { max-width: 52ch; margin-inline: auto; text-align: center; }
+.story__mark { height: 32px; width: auto; aspect-ratio: 776 / 271; margin: 0 auto var(--sp-3); }
+.story .eyebrow { margin-bottom: var(--sp-3); }
+.story p { font-size: var(--fs-md); line-height: 1.85; color: var(--color-text); }
+.story p + p { margin-top: var(--sp-2); }
 .story__closing {
-  margin-top: var(--sp-5) !important; font-size: var(--fs-md) !important;
+  margin-top: var(--sp-4) !important;
   color: var(--color-primary-dark); font-weight: 600;
-  display: inline-block; padding-top: var(--sp-4);
+  display: inline-block; padding-top: var(--sp-3);
   border-top: 2px solid var(--color-primary-light);
-}
-/* النقاط الثلاث: كانت قسمًا مستقلًا، وصارت خاتمة الحكاية */
-.story__points {
-  display: grid; gap: var(--sp-4);
-  margin-top: var(--sp-7); padding-top: var(--sp-6);
-  border-top: 1px solid var(--color-border);
 }
 
 /* ============ زر واتساب العائم ============ */
@@ -814,10 +824,11 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
   .logo__img { height: 34px; }
   .footer__logo { height: 40px; }
   .grid--auto { grid-template-columns: repeat(3, 1fr); }
-  .story__points { grid-template-columns: repeat(3, 1fr); gap: var(--sp-5); }
+  .howsplit { grid-template-columns: repeat(3, 1fr); gap: var(--sp-5); }
   .idea__item { flex-direction: column; }
-  .story__mark { height: 54px; }
-  .story__inner { padding-block: 72px; }
+  .story__mark { height: 38px; }
+  .story__inner { padding-block: 56px; }
+  .story p { font-size: var(--fs-lg); }
   .plans { grid-template-columns: repeat(3, 1fr); }
   .steps { grid-template-columns: repeat(4, 1fr); }
   .step { flex-direction: column; }
@@ -843,3 +854,6 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
 /* ============ أيقونة واتساب داخل الأزرار ============
    حجم متوازن مع النص فلا تسرق الانتباه من عبارة الإجراء */
 .btn__wa { width: 17px; height: 17px; flex: none; opacity: .9; }
+
+/* واتساب العائم يختفي خلف طبقة أي نافذة مفتوحة */
+.wa-fab.is-behind { opacity: 0; pointer-events: none; }
