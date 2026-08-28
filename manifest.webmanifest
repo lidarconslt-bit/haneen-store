@@ -1,7 +1,7 @@
 {
-  "name": "حنين — تصاميم تعليمية للمعلمات",
+  "name": "حنين — تصاميم تعليمية وبصرية حسب الطلب",
   "short_name": "حنين",
-  "description": "نحوّل درسك إلى تصميم يُحبّه الطلاب.",
+  "description": "نحوّل محتواك إلى تصميم يُفهم من أول نظرة.",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "./index.html",
@@ -11,12 +11,34 @@
   "background_color": "#FAF6EE",
   "theme_color": "#FAF6EE",
   "icons": [
-    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
   ],
   "shortcuts": [
-    { "name": "اطلبي تصميمك", "url": "./index.html#order" }
+    {
+      "name": "اطلب تصميمك",
+      "url": "./index.html#order"
+    }
   ]
 }

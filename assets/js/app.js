@@ -1069,10 +1069,13 @@
   function initServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
     if (location.protocol === 'file:') return;
-    window.addEventListener('load', function () {
+    function reg() {
       navigator.serviceWorker.register('sw.js').catch(function (e) {
         console.warn('[حنين] لم يُسجَّل service worker:', e);
       });
-    });
+    }
+    /* build() يعمل بعد جلب config، وقد يكون حدث load انتهى قبله */
+    if (document.readyState === 'complete') reg();
+    else window.addEventListener('load', reg);
   }
 })();
