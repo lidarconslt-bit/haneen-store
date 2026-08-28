@@ -1059,6 +1059,8 @@
   }
 
   function clearDraft() {
+    /* إلغاء أي حفظ مؤجَّل، وإلا أعاد كتابة المسودة بعد الإرسال */
+    clearTimeout(draftTimer);
     try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
     $('#draft-note').hidden = true;
   }
