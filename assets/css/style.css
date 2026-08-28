@@ -290,7 +290,11 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .chip.is-active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
 .chip:active { transform: scale(.96); }
 
-.gallery { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.gallery {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3);
+  /* صفوف متساوية الارتفاع — العناوين مختلفة الطول لا تُربك انتظام الشبكة */
+  grid-auto-rows: 1fr;
+}
 .work {
   padding: 0; overflow: hidden; display: flex; flex-direction: column;
   cursor: pointer; font-family: inherit; text-align: right; width: 100%;

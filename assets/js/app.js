@@ -173,7 +173,12 @@
   }
 
   function renderGallery() {
-    var styles = on(CFG.styles);
+    /* شرائح الفلترة تعرض الأساليب التي لها أعمال فعلًا — فلا تظهر نتيجة فارغة.
+       الأسلوب يبقى متاحًا في نموذج الطلب حتى لو لم يكن له نموذج بعد. */
+    var withWorks = {};
+    on(CFG.gallery).forEach(function (g) { withWorks[g.style] = true; });
+    var styles = on(CFG.styles).filter(function (s) { return withWorks[s.id]; });
+
     $('#gallery-filters').innerHTML =
       '<button type="button" class="chip is-active" data-f="all">الكل</button>' +
       styles.map(function (s) { return '<button type="button" class="chip" data-f="' + esc(s.id) + '">' + esc(s.name) + '</button>'; }).join('');
