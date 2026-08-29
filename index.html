@@ -30,7 +30,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=27">
+<link rel="stylesheet" href="assets/css/style.css?v=28">
 </head>
 <body id="top">
 
@@ -78,6 +78,7 @@
 
   <!-- ============ Hero ============ -->
   <section class="wrap hero">
+    <span class="hero__beam" aria-hidden="true"></span>
     <div>
       <h1 class="hero__title" data-reveal="hero" id="hero-title"></h1>
       <p class="hero__sub" data-reveal="hero" style="--d:80ms" id="hero-sub"></p>
@@ -88,7 +89,9 @@
       <p class="hero__for" id="hero-for" data-reveal="soft" style="--d:260ms"></p>
       <ul class="hero__trust" data-reveal="soft" style="--d:320ms" id="hero-trust"></ul>
     </div>
-    <div class="hero__media" data-reveal style="--d:200ms" id="hero-media"></div>
+    <div class="hero__stage" data-reveal style="--d:200ms">
+      <div class="hero__media" id="hero-media"></div>
+    </div>
   </section>
 
   <!-- ============ حكاية حنين ============ -->
@@ -468,6 +471,6 @@
   <a href="#order" class="btn btn--primary btn--block">اطلب تصميمك</a>
 </div>
 
-<script src="assets/js/app.js?v=27"></script>
+<script src="assets/js/app.js?v=28"></script>
 </body>
 </html>

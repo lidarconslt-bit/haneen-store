@@ -255,9 +255,71 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .hero__trust { margin-top: var(--sp-4); display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); font-size: var(--fs-sm); color: var(--color-text-muted); }
 .hero__trust li { display: flex; align-items: center; gap: 6px; }
 .hero__trust svg { width: 16px; height: 16px; color: var(--color-primary); flex: none; }
-.hero__media { margin-top: var(--sp-6); display: grid; grid-template-columns: 1fr .4fr; gap: var(--sp-2); align-items: start; }
-.hero__media img { width: 100%; height: auto; border-radius: var(--r-md); border: 1px solid var(--color-border); aspect-ratio: 3/4; object-fit: cover; background: var(--color-surface); }
-.hero__media img:nth-child(3) { display: none; }
+.hero { position: relative; isolation: isolate; }
+
+/* حزمتا ضوء نافذة تعبران المشهد — الطبقة الوحيدة خلف المحتوى */
+.hero__beam {
+  position: absolute; z-index: -1; pointer-events: none;
+  inset-block: calc(var(--sp-7) * -1) calc(var(--sp-6) * -1);
+  inset-inline: calc(50% - 50vw);
+  background:
+    linear-gradient(112deg, transparent 30%, rgba(255,251,240,.95) 38%, rgba(255,251,240,.95) 52%, transparent 60%),
+    linear-gradient(112deg, transparent 62%, rgba(255,251,240,.72) 68%, rgba(255,251,240,.72) 76%, transparent 83%);
+  filter: blur(14px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0 74%, rgba(0,0,0,.5) 90%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0 74%, rgba(0,0,0,.5) 90%, transparent 100%);
+}
+
+.hero__stage { position: relative; }
+/* ظل التلامس — يُجلس الأعمال على المشهد */
+.hero__stage::after {
+  content: ''; position: absolute; z-index: 0; pointer-events: none;
+  inset-inline: 8%; bottom: -18px; height: 42px; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(34,43,38,.16), rgba(34,43,38,0) 70%);
+  filter: blur(11px);
+}
+
+.hero__media { position: relative; z-index: 1; margin-top: var(--sp-6);
+  display: grid; grid-template-columns: 1fr .36fr; gap: var(--sp-2);
+  align-items: start; max-width: 308px; }
+
+/* رزمة الأوراق: حواف تظهر خلف العمل فتعطيه سماكة مادية */
+.hero__sheets { position: relative; aspect-ratio: 3/4; }
+.hero__sheet {
+  position: absolute; inset: 0; border-radius: var(--r-md);
+  background: var(--color-surface); border: 1px solid var(--color-border);
+}
+.hero__sheet--3 { transform: translate(-14px, -14px) rotate(-2.6deg); opacity: .55; }
+.hero__sheet--2 { transform: translate(-7px, -7px) rotate(-1.2deg); opacity: .8; }
+
+/* العمل الرئيسي: ثلاثة أعمال تتناوب بتلاشٍ طويل وزحف مقياس */
+.hero__stack {
+  position: absolute; inset: 0; border-radius: var(--r-md); overflow: hidden;
+  border: 1px solid var(--color-border); background: var(--color-surface);
+  box-shadow: 0 2px 4px rgba(34,43,38,.06), 0 22px 46px rgba(34,43,38,.17);
+}
+.hero__stack i {
+  position: absolute; inset: 0; opacity: 0;
+  background: var(--color-surface) center / cover no-repeat;
+  animation: heroCycle 19.5s cubic-bezier(.37, 0, .63, 1) infinite;
+}
+@keyframes heroCycle {
+  0%     { opacity: 0; transform: scale(1.055); }
+  10.26% { opacity: 1; }
+  33.33% { opacity: 1; }
+  43.59% { opacity: 0; transform: scale(1); }
+  100%   { opacity: 0; transform: scale(1.055); }
+}
+
+/* العمل المصاحب */
+.hero__work {
+  aspect-ratio: 3/4; border-radius: var(--r-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface) center / cover no-repeat;
+  box-shadow: 0 12px 26px rgba(34,43,38,.13);
+  animation: heroMate 26s cubic-bezier(.37, 0, .63, 1) infinite alternate;
+}
+@keyframes heroMate { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 
 /* ============ شريط الثقة ============ */
 .trustbar { background: var(--color-primary); color: #fff; }
@@ -814,8 +876,7 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
 /* ============ الاستجابة ============ */
 @media (min-width: 560px) {
   .gallery, .styles { grid-template-columns: repeat(3, 1fr); }
-  .hero__media { grid-template-columns: repeat(3, 1fr); }
-  .hero__media img:nth-child(3) { display: block; }
+  .hero__media { max-width: 380px; }
   .trustbar ul { grid-template-columns: repeat(4, 1fr); }
   .opts--3 { grid-template-columns: repeat(3, 1fr); }
 }
@@ -844,8 +905,7 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
   body.cta-visible .wa-fab { inset-block-end: calc(var(--sp-5) + env(safe-area-inset-bottom)); }
   .wa-fab { inset-block-end: var(--sp-5); inset-inline-end: var(--sp-5); }
   .hero { padding-block: var(--sp-7) 64px; display: grid; grid-template-columns: 1.05fr .95fr; gap: var(--sp-7); align-items: center; }
-  .hero__media { margin-top: 0; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
-  .hero__media img:nth-child(3) { display: none; }
+  .hero__media { margin-top: 0; grid-template-columns: 1fr .44fr; gap: var(--sp-3); max-width: none; }
   .opts { grid-template-columns: repeat(3, 1fr); }
   .opts--3 { grid-template-columns: repeat(4, 1fr); }
 }

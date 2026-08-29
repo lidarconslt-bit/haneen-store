@@ -105,9 +105,37 @@
     txt('#hero-for', h.audienceLine);
     if (!h.audienceLine) $('#hero-for').hidden = true;
 
-    $('#hero-media').innerHTML = on(CFG.gallery).slice(0, 3).map(function (g) {
-      return '<img src="' + esc(g.image) + '" alt="' + esc(g.title) + '" loading="eager" width="300" height="400">';
+    renderHeroWorks();
+  }
+
+  /* الأعمال في الهيرو: عمل رئيسي يتبدّل ببطء فوق رزمة أوراق، وعمل مصاحب ثابت.
+     الأعمال الثلاثة الأولى تتناوب، والرابع يبقى بجانبها — فلا يتكرّر عملان معًا. */
+  function renderHeroWorks() {
+    var g = on(CFG.gallery);
+    if (!g.length) return;
+
+    var cycle = g.slice(0, 3);
+    var mate = g[3] || g[0];
+
+    var layers = cycle.map(function (w, i) {
+      return '<i style="background-image:url(' + esc(w.image) + ')"' +
+             ' data-d="' + (i * 6.5) + '"></i>';
     }).join('');
+
+    $('#hero-media').innerHTML =
+      '<div class="hero__sheets">' +
+        '<span class="hero__sheet hero__sheet--3" aria-hidden="true"></span>' +
+        '<span class="hero__sheet hero__sheet--2" aria-hidden="true"></span>' +
+        '<div class="hero__stack" role="img" aria-label="' +
+          esc(cycle.map(function (w) { return w.title; }).join('، ')) + '">' + layers + '</div>' +
+      '</div>' +
+      '<div class="hero__work" role="img" aria-label="' + esc(mate.title) + '"' +
+        ' style="background-image:url(' + esc(mate.image) + ')"></div>';
+
+    /* التأخير يُضبط من JS لأن عدد الأعمال يأتي من config */
+    $$('#hero-media .hero__stack i').forEach(function (el) {
+      el.style.animationDelay = el.dataset.d + 's';
+    });
   }
 
   function renderTrustbar() {
