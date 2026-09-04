@@ -12,6 +12,7 @@
     styles: [], otherStyle: false, audiences: [], extras: {}
   };
   var DRAFT_KEY = 'haneen_draft';
+  var galleryOpen = false;   /* هل وُسّع المعرض؟ يُصفَّر مع كل فلتر */
 
   /* ---------- أدوات ---------- */
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -225,6 +226,53 @@
         drawWorks(c.dataset.f);
       });
     });
+
+    var more = $('#gallery-more');
+    if (more) {
+      more.addEventListener('click', function () {
+        galleryOpen = !galleryOpen;
+        applyGalleryCollapse();
+        if (galleryOpen) {
+          revealScan();
+          /* التركيز على أول عمل ظهر، بلا قفزة تمرير */
+          var next = $$('#gallery-grid .work')[galleryLimit()];
+          if (next) next.focus({ preventScroll: true });
+        } else {
+          $('#gallery').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+      /* تبديل عدد الأعمال المعروضة عند تغيّر عرض الشاشة */
+      var mq = window.matchMedia('(min-width: 560px)');
+      (mq.addEventListener ? mq.addEventListener.bind(mq, 'change')
+                           : mq.addListener.bind(mq))(applyGalleryCollapse);
+    }
+  }
+
+  /* أربعة أعمال على الجوال وستة على الأوسع — صفّان كاملان في الحالتين */
+  function galleryLimit() {
+    return window.matchMedia('(min-width: 560px)').matches ? 6 : 4;
+  }
+
+  /* الأعمال الزائدة تبقى في الصفحة ويُخفيها CSS فقط،
+     فيظل فهرس صندوق العرض والتنقّل بين الأعمال سليمًا. */
+  function applyGalleryCollapse() {
+    var grid = $('#gallery-grid'), btn = $('#gallery-more');
+    if (!grid || !btn) return;
+
+    var total = $$('#gallery-grid .work').length;
+    if (total <= galleryLimit()) {
+      grid.classList.remove('is-collapsed');
+      btn.classList.remove('is-open');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.hidden = true;
+      return;
+    }
+
+    btn.hidden = false;
+    grid.classList.toggle('is-collapsed', !galleryOpen);
+    btn.classList.toggle('is-open', galleryOpen);
+    btn.setAttribute('aria-expanded', galleryOpen ? 'true' : 'false');
+    btn.innerHTML = (galleryOpen ? 'عرض أقل' : 'عرض كل الأعمال (' + total + ')') + icon('plus');
   }
 
   function drawWorks(filter) {
@@ -252,6 +300,9 @@
     $$('#gallery-grid .work').forEach(function (b) {
       b.addEventListener('click', function () { openLightbox(+b.dataset.i); });
     });
+
+    galleryOpen = false;          /* الفلتر الجديد يعود إلى الحالة المختصرة */
+    applyGalleryCollapse();
     revealScan();
   }
 

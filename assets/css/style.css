@@ -363,6 +363,22 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
   background: var(--color-surface);
 }
 .work:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--color-primary-light); }
+
+/* لمحة أولى ثم عرض الكل — صفّان كاملان في الحالتين:
+   أربعة أعمال على الجوال (عمودان)، وستة على الأوسع (ثلاثة أعمدة). */
+.gallery.is-collapsed .work:nth-child(n+5) { display: none; }
+
+.more {
+  display: flex; align-items: center; gap: 8px; width: fit-content;
+  margin-block-start: var(--sp-4); margin-inline-start: auto;
+  padding: 10px 2px; background: none; border: 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-primary); cursor: pointer;
+  font: 600 var(--fs-sm) / 1 var(--font);
+}
+.more:hover { border-bottom-color: var(--color-primary); }
+.more svg { width: 15px; height: 15px; transition: transform 260ms var(--ease-out); }
+.more.is-open svg { transform: rotate(45deg); }
 .work:active { transform: translateY(-1px) scale(.99); }
 .work__img { aspect-ratio: 3/4; overflow: hidden; background: var(--color-bg-alt); position: relative; }
 .work__img img { width: 100%; height: 100%; object-fit: cover; transition: transform 520ms var(--ease-out); }
@@ -876,6 +892,9 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
 /* ============ الاستجابة ============ */
 @media (min-width: 560px) {
   .gallery, .styles { grid-template-columns: repeat(3, 1fr); }
+  .gallery.is-collapsed .work:nth-child(5),
+  .gallery.is-collapsed .work:nth-child(6) { display: flex; }
+  .gallery.is-collapsed .work:nth-child(n+7) { display: none; }
   .hero__media { max-width: 380px; }
   .trustbar ul { grid-template-columns: repeat(4, 1fr); }
   .opts--3 { grid-template-columns: repeat(3, 1fr); }
