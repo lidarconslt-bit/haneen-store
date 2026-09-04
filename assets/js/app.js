@@ -158,12 +158,27 @@
     }).join('');
   }
 
+  /* أول عمل منشور من هذا النوع — الربط من المعرض نفسه، بلا حقل جديد في config */
+  function sampleOfProduct(productId) {
+    var list = on(CFG.gallery).filter(function (g) { return g.product === productId; });
+    return list.length ? list[0] : null;
+  }
+
+  /* أول عمل نُفّذ بهذا الأسلوب */
+  function sampleOfStyle(styleId) {
+    var list = on(CFG.gallery).filter(function (g) { return g.style === styleId; });
+    return list.length ? list[0] : null;
+  }
+
   function renderProducts() {
     $('#products-grid').innerHTML = on(CFG.products).map(function (p, i) {
       var soon = !orderable(p);
-      return '<button type="button" class="card product' + (soon ? ' is-soon' : '') + '"' +
+      var sm = soon ? null : sampleOfProduct(p.id);
+      return '<button type="button" class="card product' + (soon ? ' is-soon' : '') + (sm ? ' has-sample' : '') + '"' +
         (soon ? ' disabled' : ' data-product="' + esc(p.id) + '"') +
         ' data-reveal="card" style="--d:' + (i * 55) + 'ms">' +
+        (sm ? '<span class="product__sample" style="background-image:url(' + esc(sm.image) + ')">' +
+              '<span class="product__from"><i>من أعمالنا</i><b>' + esc(sm.title) + '</b></span></span>' : '') +
         (p.badge ? '<span class="badge product__badge">' + esc(p.badge) + '</span>' : '') +
         '<span class="product__icon">' + icon(p.icon) + '</span>' +
         '<span class="product__name">' + esc(p.name) + '</span>' +
@@ -214,9 +229,16 @@
     on(CFG.gallery).forEach(function (g) { withWorks[g.style] = true; });
     var styles = on(CFG.styles).filter(function (s) { return withWorks[s.id]; });
 
+    /* عدّاد بجانب كل شريحة — يجعل المعرض يبدو أرشيفًا لا قائمة أزرار */
+    var counts = {}, all = on(CFG.gallery);
+    all.forEach(function (g) { counts[g.style] = (counts[g.style] || 0) + 1; });
+
     $('#gallery-filters').innerHTML =
-      '<button type="button" class="chip is-active" data-f="all">الكل</button>' +
-      styles.map(function (s) { return '<button type="button" class="chip" data-f="' + esc(s.id) + '">' + esc(s.name) + '</button>'; }).join('');
+      '<button type="button" class="chip is-active" data-f="all">الكل <em>' + ar(all.length) + '</em></button>' +
+      styles.map(function (s) {
+        return '<button type="button" class="chip" data-f="' + esc(s.id) + '">' +
+          esc(s.name) + ' <em>' + ar(counts[s.id] || 0) + '</em></button>';
+      }).join('');
 
     drawWorks('all');
 
@@ -295,6 +317,7 @@
         '<span class="work__body">' +
           '<span class="work__title">' + esc(g.title) + '</span>' +
           '<span class="work__meta">' + metaOf(g) + '</span>' +
+          '<span class="work__go">اطلب مثله ←</span>' +
         '</span></button>';
     }).join('');
 
@@ -337,12 +360,23 @@
     $('#lb-next').hidden = !multi;
   }
 
+  /* مواصفات العمل كبطاقة مقروءة، وسعر نوعه مقروء من products */
   function metaChips(g) {
     var st = byId(on(CFG.styles), g.style), pr = byId(CFG.products || [], g.product);
-    return [['المستوى', g.age], ['الأسلوب', st ? st.name : ''], ['النوع', pr ? pr.name : '']]
-      .filter(function (r) { return r[1]; })
-      .map(function (r) { return '<span class="badge badge--soft">' + esc(r[0]) + ': ' + esc(r[1]) + '</span>'; })
-      .join('');
+    var rows = [['نوع التصميم', pr ? pr.name : ''],
+                ['الأسلوب', st ? st.name : ''],
+                ['الفئة العمرية', g.age]]
+      .filter(function (r) { return r[1]; });
+
+    var html = '<dl class="lb__rows">' + rows.map(function (r) {
+      return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+    }).join('') + '</dl>';
+
+    if (pr && orderable(pr)) {
+      html += '<p class="lb__price"><span class="num">' + ar(pr.price) + '</span> ريال' +
+              '<small>سعر هذا النوع</small></p>';
+    }
+    return html;
   }
 
   function initLightbox() {
@@ -490,13 +524,9 @@
       return optHtml('product', p.id, p.name, p.price + ' ريال');
     }).join('');
 
-    $('#opt-style').innerHTML = on(CFG.styles).map(function (s) {
-      return optHtml('style', s.id, s.name, '', 'checkbox');
-    }).join('');
+    $('#opt-style').innerHTML = on(CFG.styles).map(optStyleHtml).join('');
 
-    $('#opt-size').innerHTML = (CFG.sizes || []).map(function (s) {
-      return optHtml('size', s.id, s.name, s.hint);
-    }).join('');
+    $('#opt-size').innerHTML = (CFG.sizes || []).map(optSizeHtml).join('');
 
     $('#opt-audience').innerHTML = on(CFG.audiences).map(function (a) {
       return optHtml('audience', a.id, a.name, '', 'checkbox');
@@ -572,6 +602,55 @@
   function optHtml(name, val, label, hint, type) {
     return '<label class="opt"><input type="' + (type || 'radio') + '" name="' + name + '" value="' + esc(val) + '">' +
       '<span>' + esc(label) + (hint ? '<small>' + esc(hint) + '</small>' : '') + '</span></label>';
+  }
+
+  /* الأسلوب يُختار بالعين: صورة عمل حقيقي نُفّذ به،
+     وإن لم يكن له عمل منشور فمربّعه اللوني من assets/img/styles */
+  /* رقم الإصدار مقروء من وسم الأنماط — مربّعات الأساليب تُعدّل في مكانها،
+     فلولا الوسم لبقي متصفّح الزائرة يعرض النسخة القديمة */
+  var assetV = (function () {
+    var l = document.querySelector('link[rel="stylesheet"][href*="style.css"]');
+    var m = l && (l.getAttribute('href') || '').match(/\?v=[\w.-]+/);
+    return m ? m[0] : '';
+  })();
+
+  function optStyleHtml(s) {
+    var sm = sampleOfStyle(s.id);
+    var src = sm ? sm.image : (s.image ? s.image + assetV : '');
+    return '<label class="opt opt--visual">' +
+      '<input type="checkbox" name="style" value="' + esc(s.id) + '">' +
+      '<span>' +
+        (src ? '<i class="opt__img' + (sm ? '' : ' opt__img--flat') + '"' +
+               ' style="background-image:url(' + esc(src) + ')"></i>' : '') +
+        '<b>' + esc(s.name) + '</b>' +
+      '</span></label>';
+  }
+
+  /* أبعاد ورقة المقاس بالبكسل — النسبة صحيحة، وA3 أكبر فعليًا من A4 */
+  var SIZE_BOX = { a4: [46, 65], a3: [55, 78], square: [60, 60], '45': [52, 65], '916': [41, 73] };
+
+  function sizeBox(s) {
+    if (SIZE_BOX[s.id]) return SIZE_BOX[s.id];
+    var m = String(s.name || '').match(/(\d+)\s*[:\/]\s*(\d+)/);
+    if (m && +m[2]) {
+      var h = 66, w = Math.round(h * (+m[1] / +m[2]));
+      if (w > 74) { w = 74; h = Math.round(w * (+m[2] / +m[1])); }
+      return [w, h];
+    }
+    return null;   /* مقاس بلا نسبة معروفة ← مربّع متقطّع */
+  }
+
+  function optSizeHtml(s) {
+    var b = sizeBox(s);
+    var shape = b
+      ? '<i class="opt__paper" style="width:' + b[0] + 'px;height:' + b[1] + 'px"></i>'
+      : '<i class="opt__paper opt__paper--free">\u061f</i>';
+    return '<label class="opt opt--size">' +
+      '<input type="radio" name="size" value="' + esc(s.id) + '">' +
+      '<span><i class="opt__box">' + shape + '</i>' +
+        '<b>' + esc(s.name) + '</b>' +
+        (s.hint ? '<small>' + esc(s.hint) + '</small>' : '') +
+      '</span></label>';
   }
 
   function checkedValues(name) {

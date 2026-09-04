@@ -21,6 +21,12 @@
 
   --color-secondary:     #2C5670;
 
+  /* السبورة — المشهد الغني الوحيد في «كيف نعمل؟» */
+  --color-board:         #2B3A32;
+  --color-chalk:         #EFE9DB;
+  --color-wood:          #8A6E4B;
+  --color-wood-dk:       #6B5335;
+
   --color-text:          #222B26;
   --color-text-muted:    #636E66;
   --color-on-primary:    #FFFFFF;
@@ -43,7 +49,8 @@
   --shadow-md: 0 4px 14px rgba(34, 43, 38, .07);
 
   /* --- الطباعة --- */
-  --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font:         "Readex Pro", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-display: "Marhey", "Readex Pro", "Segoe UI", Tahoma, system-ui, sans-serif;
   --fs-xs: .8125rem;   /* 13 */
   --fs-sm: .875rem;    /* 14 */
   --fs-md: 1rem;       /* 16 */
@@ -93,6 +100,13 @@ h3 { font-size: var(--fs-lg); }
 p  { margin: 0; }
 img, svg { max-width: 100%; display: block; }
 a  { color: var(--color-primary-dark); text-decoration: none; }
+
+/* نظام خطين: Marhey للعناوين والأرقام الكبيرة، Readex Pro لكل ما يُقرأ */
+h1, h2, h3,
+.plan__name, .plan__num, .total__value, .order-no {
+  font-family: var(--font-display);
+  letter-spacing: -.005em;
+}
 ul { margin: 0; padding: 0; list-style: none; }
 
 /* الأرقام لاتينية دائمًا لتفادي كسر الاتجاه */
@@ -187,6 +201,45 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
   display: grid; place-items: center; margin-bottom: var(--sp-3);
 }
 .product__icon svg { width: 22px; height: 22px; }
+
+/* رأس البطاقة = نموذج حقيقي من المعرض، لا صورة عائمة فوقها.
+   الربط مأخوذ من gallery[].product — بلا أي أصل جديد. */
+.product { overflow: hidden; }
+.product__sample {
+  position: relative; display: block;
+  margin: calc(var(--sp-4) * -1) calc(var(--sp-4) * -1) var(--sp-3);
+  aspect-ratio: 4 / 3; max-height: 150px;
+  background: var(--color-bg-alt) center 38% / cover no-repeat;
+  border-bottom: 1px solid var(--color-border);
+}
+/* حافّة ورق مقصوصة تفصل النموذج عن النص */
+.product__sample::after {
+  content: ''; position: absolute; inset-inline: 0; bottom: -1px; height: 8px;
+  background: radial-gradient(circle at 8px 11px, rgba(0,0,0,0) 8px, var(--color-surface) 8.5px) repeat-x;
+  background-size: 16px 8px;
+}
+.product__from {
+  position: absolute; top: 7px; inset-inline-start: 7px; z-index: 2;
+  max-width: calc(100% - 14px);
+  background: rgba(255,255,255,.94); border: 1px solid var(--color-border);
+  border-radius: var(--r-sm);
+  padding: 3px 9px 4px;
+  box-shadow: 0 1px 3px rgba(34,43,38,.14);
+}
+/* سطران: «من أعمالنا» فوق العنوان، فيظهر العنوان كاملًا على الجوال */
+.product__from i {
+  display: block; font-style: normal;
+  font-size: 9.5px; line-height: 1.35; letter-spacing: .05em;
+  color: var(--color-text-muted);
+}
+.product__from b {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 11px; font-weight: 600; line-height: 1.4; color: var(--color-text);
+}
+/* مع وجود نموذج حقيقي، الأيقونة المجرّدة تكرار — الصورة تقول ما تقوله وأوضح */
+.product.has-sample .product__icon { display: none; }
+.product.has-sample .product__name { margin-top: 0; }
 .product__name { font-size: var(--fs-md); font-weight: 600; }
 .product__desc { font-size: var(--fs-sm); color: var(--color-text-muted); margin-top: var(--sp-1); line-height: 1.6; }
 /* سطر ثانوي يوضّح حجم المخرَج — أهدأ من الوصف ولا ينافس الاسم أو السعر */
@@ -362,6 +415,13 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .chip:hover { border-color: var(--color-primary); color: var(--color-primary-dark); }
 .chip.is-active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
 .chip:active { transform: scale(.96); }
+/* عدد الأعمال داخل كل شريحة — محسوب من البيانات */
+.chip em {
+  font-style: normal; font-size: var(--fs-xs); font-weight: 500;
+  color: var(--color-text-muted); margin-inline-start: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.chip.is-active em { color: rgba(255,255,255,.72); }
 
 .gallery {
   display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3);
@@ -414,6 +474,13 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .work__body { padding: var(--sp-3); display: flex; flex-direction: column; gap: 5px; flex: 1; }
 .work__title { font-size: var(--fs-sm); font-weight: 600; line-height: 1.45; }
 .work__meta { font-size: var(--fs-xs); color: var(--color-text-muted); display: flex; flex-wrap: wrap; gap: 4px 7px; }
+/* مدخل الطلب — يحوّل المعرض من ألبوم إلى فهرس */
+.work__go {
+  margin-top: auto; padding-top: var(--sp-2);
+  font-size: var(--fs-xs); font-weight: 600; color: var(--color-primary);
+  transition: color var(--dur) var(--ease);
+}
+.work:hover .work__go, .work:focus-visible .work__go { color: var(--color-primary-dark); }
 
 /* ============ صندوق عرض العمل ============ */
 .lightbox { max-width: 880px; width: calc(100% - 24px); }
@@ -436,7 +503,26 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .lb__prev { inset-inline-start: var(--sp-3); }  /* في RTL: inline-start = اليمين = السابق */
 .lb__next { inset-inline-end: var(--sp-3); }
 .lb__info { padding: var(--sp-4); }
-.lb__meta { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-block: var(--sp-3); }
+/* لم تعد شرائح متجاورة بل بطاقة مقروءة — فالتدفق عمودي */
+.lb__meta { display: block; margin-block: var(--sp-3); }
+/* بطاقة العمل: مواصفاته وسعر نوعه قبل زر الإجراء */
+.lb__rows { margin: 0 0 var(--sp-3); display: grid; }
+.lb__rows > div {
+  display: flex; justify-content: space-between; gap: var(--sp-4);
+  padding: 9px 0; border-bottom: 1px dashed var(--color-border);
+  font-size: var(--fs-sm);
+}
+.lb__rows dt { color: var(--color-text-muted); }
+.lb__rows dd { margin: 0; font-weight: 600; text-align: end; }
+.lb__price {
+  display: flex; align-items: baseline; gap: 7px; margin-bottom: var(--sp-4);
+  font-family: var(--font-display); font-size: 30px; font-weight: 700;
+  color: var(--color-primary-dark); line-height: 1;
+}
+.lb__price small {
+  font-family: var(--font); font-size: var(--fs-xs); font-weight: 400;
+  color: var(--color-text-muted);
+}
 .lb__count { font-size: var(--fs-xs); color: var(--color-text-muted); text-align: center; padding-bottom: var(--sp-3); }
 
 .styles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
@@ -561,6 +647,45 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .step h3 { font-size: var(--fs-md); }
 .step p { font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.6; }
 
+/* ============ السبورة ============
+   المشهد الغني الوحيد في القسم: الخطوات الأربع وحدها.
+   النقاط الثلاث و«ماذا تستلم؟» يبقيان على الورق كما هما. */
+.boardwrap {
+  margin-bottom: var(--sp-6);
+  padding: 12px;
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, var(--color-wood), var(--color-wood-dk));
+  box-shadow: 0 2px 4px rgba(34,43,38,.10), 0 18px 34px -16px rgba(34,43,38,.42);
+}
+.board {
+  position: relative; overflow: hidden; border-radius: 6px;
+  padding: var(--sp-6) var(--sp-4) var(--sp-5);
+  background:
+    radial-gradient(120% 80% at 28% 8%, rgba(255,255,255,.07), transparent 55%),
+    radial-gradient(90% 70% at 78% 92%, rgba(255,255,255,.05), transparent 60%),
+    var(--color-board);
+  box-shadow: inset 0 0 46px rgba(0,0,0,.42);
+}
+/* أثر مسحة طباشير — طبقة واحدة خفيفة، بلا زخرفة إضافية */
+.board::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .12;
+  background:
+    radial-gradient(56% 20% at 22% 26%, rgba(239,233,219,.9), transparent 70%),
+    radial-gradient(46% 16% at 74% 72%, rgba(239,233,219,.75), transparent 70%);
+}
+.board > * { position: relative; z-index: 1; }
+.board .steps__title { color: var(--color-chalk); text-align: center; }
+.board .step h3 { color: var(--color-chalk); }
+.board .step p { color: rgba(239,233,219,.66); }
+.board .step__n {
+  background: transparent; color: var(--color-chalk);
+  border: 2px solid rgba(239,233,219,.52);
+}
+/* خطوة الدفع هي التي تتوقف عندها المعلمة فعلًا */
+.board .step:nth-child(3) .step__n {
+  border-color: var(--color-accent-light); color: var(--color-accent-light);
+}
+
 /* ============ التسليم — ضمن «كيف نعمل» ============ */
 .handover {
   margin-top: var(--sp-6); padding: var(--sp-5);
@@ -655,6 +780,50 @@ input:focus, select:focus, textarea:focus {
 }
 .opt input[type="checkbox"]:checked + span::after { transform: scale(1); opacity: 1; }
 .opt input[type="checkbox"] + span { padding-inline-start: 26px; }
+
+/* ---- خيار الأسلوب: عمل حقيقي نُفّذ به، لا اسم مجرّد ---- */
+.opt--visual span {
+  padding: 0; gap: 0; min-height: 0; overflow: hidden;
+  background: var(--color-surface); align-items: stretch;
+}
+.opt--visual input:checked + span { background: var(--color-surface); }
+.opt--visual input[type="checkbox"] + span { padding-inline-start: 0; }
+.opt__img {
+  display: block; width: 100%; aspect-ratio: 4 / 3; flex: none;
+  background: var(--color-bg-alt) center 38% / cover no-repeat;
+  border-bottom: 1px solid var(--color-border);
+}
+/* المربّع اللوني الاحتياطي لأسلوب بلا أعمال منشورة */
+.opt__img--flat { background-size: cover; background-position: center; }
+.opt--visual b {
+  display: block; width: 100%; text-align: center;
+  font-size: var(--fs-sm); font-weight: 500; padding: 9px 6px 10px;
+}
+.opt--visual input:checked + span b {
+  background: var(--color-primary-light); color: var(--color-primary-dark); font-weight: 600;
+}
+.opt--visual input[type="checkbox"] + span::after { top: 7px; inset-inline-start: 7px; box-shadow: 0 1px 3px rgba(34,43,38,.35); }
+
+/* ---- خيار المقاس: ورقة بنسبتها الحقيقية ---- */
+.opt--size span { padding: 12px 6px 11px; gap: 9px; min-height: 0; justify-content: flex-end; }
+.opt__box { width: 100%; height: 80px; flex: none; display: grid; place-items: end center; }
+.opt__paper {
+  display: block; position: relative;
+  background: var(--color-bg); border: 1px solid #BFB39B;
+  box-shadow: 1px 1px 0 rgba(34,43,38,.10);
+}
+.opt__paper::after {
+  content: ''; position: absolute; inset: 5px;
+  background: repeating-linear-gradient(180deg, transparent 0 5px, rgba(99,110,102,.20) 5px 6px);
+}
+.opt input:checked + span .opt__paper { border-color: var(--color-primary); background: #fff; }
+.opt__paper--free {
+  width: 56px; height: 56px; border-style: dashed; background: transparent;
+  display: grid; place-items: center; color: var(--color-text-muted); font-size: 17px;
+}
+.opt__paper--free::after { content: none; }
+.opt--size b { font-size: var(--fs-sm); font-weight: 600; line-height: 1.25; }
+.opt--size small { margin-top: 1px; }
 
 /* خانات الإضافات */
 .addon {
@@ -981,6 +1150,17 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
     background: linear-gradient(to left,
       transparent 0, var(--color-border) 6%, var(--color-border) 94%, transparent 100%);
   }
+  /* فوق السبورة يصير المسار خطّ طباشير متقطّع، والدوائر تقطعه بحلقة بلون اللوح */
+  .board .steps::before {
+    height: 2px;
+    background:
+      linear-gradient(to left, transparent 0, rgba(239,233,219,.34) 6%,
+                      rgba(239,233,219,.34) 94%, transparent 100%)
+      repeat-x;
+    -webkit-mask-image: repeating-linear-gradient(to left, #000 0 9px, transparent 9px 20px);
+    mask-image: repeating-linear-gradient(to left, #000 0 9px, transparent 9px 20px);
+  }
+  .board .step__n { box-shadow: 0 0 0 6px var(--color-board); }
   .how__foot .btn { width: auto; }
   .delivery__list { grid-template-columns: 1fr 1fr; }
   .footer { padding-bottom: var(--sp-6); }
@@ -997,7 +1177,9 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
 @media (min-width: 1024px) {
   .gallery { grid-template-columns: repeat(4, 1fr); }
   .styles { grid-template-columns: repeat(6, 1fr); }
-  .grid--auto { grid-template-columns: repeat(6, 1fr); }
+  /* أربعة أعمدة لا ستة: البطاقة صارت تحمل نموذجًا مصوّرًا،
+     فيتساوى عرضها مع بطاقات المعرض وينتظم الصفّان (٤ + ٣) */
+  .grid--auto { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* ============ أيقونة واتساب داخل الأزرار ============
