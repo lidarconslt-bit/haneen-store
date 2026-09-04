@@ -189,19 +189,30 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .product__icon svg { width: 22px; height: 22px; }
 .product__name { font-size: var(--fs-md); font-weight: 600; }
 .product__desc { font-size: var(--fs-sm); color: var(--color-text-muted); margin-top: var(--sp-1); line-height: 1.6; }
-.product__price { font-weight: 700; color: var(--color-primary-dark); font-size: var(--fs-lg); }
+/* سطر ثانوي يوضّح حجم المخرَج — أهدأ من الوصف ولا ينافس الاسم أو السعر */
+.product__spec {
+  font-size: var(--fs-xs); color: var(--color-text-muted); opacity: .78;
+  margin-top: var(--sp-1); line-height: 1.5;
+}
+.product.is-soon .product__spec { display: none; }
+.product__price { font-weight: 700; color: var(--color-primary-dark); font-size: var(--fs-lg);
+  /* «يبدأ من ٣٠ ريال» وحدة واحدة — لا تنكسر «من» إلى سطر مستقل */
+  white-space: nowrap; }
 .product__price small { font-weight: 400; color: var(--color-text-muted); font-size: var(--fs-xs); }
 /* «قريبًا» ليست منتجًا يُشترى — تُعرض كشريط إشارة لخارطة الطريق
    بعرض الصف كاملًا، فلا تترك بطاقة يتيمة في آخر الشبكة */
 .product.is-soon {
   grid-column: 1 / -1;
   flex-direction: row; align-items: center; gap: var(--sp-3);
+  /* المحتوى متجمّع في الوسط بدل قطبين تفصلهما مساحة فارغة */
+  justify-content: center; flex-wrap: wrap;
   background: transparent; border-style: dashed; box-shadow: none;
 }
 .product.is-soon .product__icon { margin-bottom: 0; flex: none; order: 1; }
 .product.is-soon .product__name { font-size: var(--fs-sm); order: 2; }
-.product.is-soon .product__badge { position: static; order: 3; margin-inline-start: auto; }
-.product.is-soon .product__desc { display: none; }
+.product.is-soon .product__desc { order: 3; margin-top: 0; font-size: var(--fs-xs); }
+.product.is-soon .product__badge { position: static; order: 4; margin-inline-start: 0; }
+/* السعر يبقى مخفيًا: المنتج غير متاح للطلب بعد */
 .product.is-soon .product__foot { display: none; }
 
 /* شارة */

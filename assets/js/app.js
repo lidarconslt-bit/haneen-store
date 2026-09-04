@@ -168,8 +168,9 @@
         '<span class="product__icon">' + icon(p.icon) + '</span>' +
         '<span class="product__name">' + esc(p.name) + '</span>' +
         '<span class="product__desc">' + esc(p.desc) + '</span>' +
+        (p.spec ? '<span class="product__spec">' + esc(p.spec) + '</span>' : '') +
         '<span class="product__foot">' +
-          '<span class="product__price"><span class="num">' + p.price + '</span> ريال <small>يبدأ من</small></span>' +
+          '<span class="product__price"><small>يبدأ من</small> <span class="num">' + p.price + '</span> ريال</span>' +
           (soon ? '' : '<span class="product__pick">اختيار ←</span>') +
         '</span></button>';
     }).join('');
