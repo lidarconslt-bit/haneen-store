@@ -467,6 +467,80 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 }
 .work:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--color-primary-light); }
 
+/* ============ مشهد: لقطة من تجربة التعلّم ============ */
+/* مشهد فوتوغرافي بعرض الصفحة، لا بطاقة: بلا سطح أبيض ولا إطار ولا نسبة 4:5.
+   قياس الصورة أثبت أن الطفلين يشغلان الوسط كاملًا، وأن الشريط الهادئ الوحيد
+   أسفل الورقة لا يتجاوز 70px على سطح المكتب و40px على الجوال — أضيق من أن
+   يحمل نصًا كبيرًا. فالتدرّج يبدأ داخل الصورة ويستمر إلى أرضية القسم، والنص
+   يجلس على حقل داكن متصل: لا صندوق، ولا حرف فوق وجه أو ورقة. */
+.scene {
+  position: relative; isolation: isolate;
+  width: 100%; overflow: hidden;
+  background: var(--color-board);
+  margin-block: var(--sp-6) 0;
+}
+.scene__media {
+  position: relative;
+  /* الجوال: 1:1 وليس أضيق. حساب: الاقتصاص الأفقي يُبقي من عرض الأصل
+     نسبةَ (نسبة الإطار ÷ 1.5). وجها الطفلين يحتاجان 916px من 1536 والورقة
+     1056px، أي نسبة إطار لا تقل عن 1.03. عند 4:5 يُقص وجه الولد، وعند 1:1
+     تُقص حافة الورقة — فاخترنا 21:20. */
+  aspect-ratio: 21 / 20;
+  overflow: hidden;
+}
+.scene__img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: 50% 100%;           /* يُبقي الوجوه والورقة ويفتح شريط الطاولة */
+  transition: transform 1200ms var(--ease-out);
+}
+/* التدرّج يذوب من قاع الصورة إلى أرضية القسم — بلا حافة تفصل الاثنين */
+.scene__media::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to top,
+    var(--color-board) 0%,
+    rgba(43, 58, 50, .78) 9%,
+    rgba(43, 58, 50, .40) 20%,
+    rgba(43, 58, 50, .12) 30%,
+    rgba(43, 58, 50, 0)   40%);
+}
+.scene__text {
+  position: relative; z-index: 1;
+  margin-top: -6%;                     /* يتداخل مع شريط الطاولة وحده، تحت حافة الورقة */
+  padding: 0 var(--sp-4) var(--sp-6);
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-3);
+  text-align: center;
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.scene__line {
+  color: #fff; font-weight: 700; line-height: 1.5;
+  font-size: clamp(1.375rem, 6.2vw, 1.75rem);
+  max-width: 20ch;
+  text-shadow: 0 1px 14px rgba(16, 22, 18, .5);
+}
+.scene__link {
+  color: #fff; font-weight: 600; font-size: var(--fs-md);
+  padding-bottom: 4px; border-bottom: 1px solid rgba(255, 255, 255, .45);
+  transition: border-color var(--dur) var(--ease);
+}
+.scene__link span { display: inline-block; transition: transform var(--dur) var(--ease); }
+
+@media (min-width: 768px) {
+  .scene__media { aspect-ratio: 16 / 9; }
+  .scene__text { margin-top: -4%; padding-bottom: var(--sp-7); gap: var(--sp-4); }
+  /* سطر واحد لا ينكسر — أقرب إلى نبرة الافتتاحية */
+  .scene__line { font-size: clamp(1.75rem, 2.8vw, 2.375rem); max-width: 42ch; }
+  .scene__link { font-size: var(--fs-lg); }
+}
+
+/* حركة هادئة لأجهزة المؤشر وحدها — لا حركة تلقائية مستمرة */
+@media (hover: hover) and (pointer: fine) {
+  .scene:hover .scene__img { transform: scale(1.035); }
+  .scene:hover .scene__text { transform: translateY(-4px); }
+  .scene:hover .scene__link { border-bottom-color: #fff; }
+  .scene:hover .scene__link span { transform: translateX(-4px); }
+}
+
 /* لمحة أولى ثم عرض الكل — صفّان كاملان في الحالتين:
    أربعة أعمال على الجوال (عمودان)، وستة على الأوسع (ثلاثة أعمدة). */
 .gallery.is-collapsed .work:nth-child(n+5) { display: none; }
