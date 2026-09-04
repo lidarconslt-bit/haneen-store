@@ -18,6 +18,18 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
+  /* إظهار/إخفاء نموذج الطلب.
+     لا تُستخدم form.style هنا: النموذج يحوي حقولًا اسمها style (مربّعات الأسلوب)،
+     والوصول بالاسم على <form> يغلب الخصائص المدمجة فيعيد RadioNodeList بدل
+     CSSStyleDeclaration، فيضيع ضبط العرض بصمت وبلا خطأ. السمة style لا تُظلَّل.
+     النموذج بلا أنماط سطرية في الصفحة، فحذف السمة يعيده إلى وضعه الطبيعي. */
+  function showOrderForm(on) {
+    var f = $('#order-form');
+    if (!f) return;
+    if (on) f.removeAttribute('style');
+    else f.setAttribute('style', 'display:none');
+  }
+
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -989,7 +1001,7 @@
         : '';
     }
 
-    $('#order-form').style.display = 'none';
+    showOrderForm(false);
     $('#success').classList.add('is-shown');
     $('#success').scrollIntoView({ behavior: 'smooth', block: 'start' });
     var b = $('#btn-submit'); b.disabled = false; b.textContent = submitLabel();
@@ -1057,7 +1069,7 @@
     $('#other-style-wrap').hidden = true;
     $('#style-note').hidden = true;
     $('#success').classList.remove('is-shown');
-    $('#order-form').style.display = '';
+    showOrderForm(true);
     calcTotal();
     gotoStep(1);
     $('#order').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1088,7 +1100,7 @@
     var closed = !s.ordersOpen;
 
     if (closed) {
-      $('#order-form').style.display = 'none';
+      showOrderForm(false);
       $('#store-closed').style.display = '';
       txt('#closed-text', ops.closedMessage);
       txt('#order-capacity', '');
