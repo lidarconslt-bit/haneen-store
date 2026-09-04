@@ -455,16 +455,15 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .plans { display: grid; gap: var(--sp-3); }
 .plan {
   display: flex; flex-direction: column; gap: var(--sp-3); position: relative;
-  overflow: hidden; padding-top: var(--sp-5);
-}
-/* شريط لوني علوي رفيع يعطي البطاقة انتماءً للهوية بدل السطح الأبيض المسطّح */
-/* رأس ملوّن خفيف يمنح البطاقة عمقًا بدل السطح الأبيض المسطّح */
-.plan {
-  background: linear-gradient(var(--color-bg-alt) 0 96px, var(--color-surface) 96px);
+  overflow: hidden;
+  /* الرأس يملك حشوه العلوي بنفسه ليمتد لونه إلى حافة البطاقة */
+  padding: 0 var(--sp-4) var(--sp-4);
+  background: var(--color-surface);
   box-shadow: 0 1px 3px rgba(34, 43, 38, .04);
 }
+/* شريط لوني علوي رفيع يعطي البطاقة انتماءً للهوية بدل السطح الأبيض المسطّح */
 .plan::before {
-  content: ''; position: absolute; top: 0; inset-inline: 0; height: 4px;
+  content: ''; position: absolute; top: 0; inset-inline: 0; height: 4px; z-index: 1;
   background: var(--color-border);
   transition: background var(--dur-2) var(--ease);
 }
@@ -474,37 +473,68 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .plan:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
 .plan.is-featured {
   border-color: var(--color-primary); border-width: 2px;
-  background: linear-gradient(var(--color-primary-light) 0 100px, var(--color-surface) 100px);
   box-shadow: 0 0 0 4px rgba(79, 115, 96, .07), 0 8px 26px rgba(34, 43, 38, .10);
 }
-.plan.is-featured .plan__price { font-size: 3rem; }
 .plan.is-featured:hover { transform: translateY(-6px); }
 .plan .btn svg { width: 17px; height: 17px; opacity: .85; }
 .plan__flag {
-  position: absolute; top: 5px; inset-inline-start: var(--sp-4);
+  position: absolute; top: 5px; inset-inline-start: var(--sp-4); z-index: 2;
   background: var(--color-primary); color: #fff; font-size: var(--fs-xs); font-weight: 600;
   padding: 3px 12px; border-radius: 0 0 var(--r-sm) var(--r-sm);
+}
+/* رأس ملوّن يضم الاسم والسعر ومدة التسليم — كتلة القرار كاملة قبل تفاصيل المحتوى.
+   الحشو العلوي 40px يترك الشارة (تنتهي عند 34px) بلا تداخل مع العنوان،
+   وهو موحّد في البطاقات الثلاث حتى تبقى العناوين على خط أفقي واحد. */
+.plan__head {
+  margin-inline: calc(var(--sp-4) * -1);
+  padding: 40px var(--sp-4) var(--sp-4);
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+}
+.plan.is-featured .plan__head {
+  background: var(--color-primary-light);
+  border-bottom-color: rgba(79, 115, 96, .22);
 }
 .plan__name { font-size: var(--fs-xl); font-weight: 700; color: var(--color-secondary); }
 .plan__note { font-size: var(--fs-xs); color: var(--color-text-muted); margin-top: 2px; }
 .plan__price {
-  font-size: 2.75rem; font-weight: 700; color: var(--color-primary-dark);
-  display: flex; align-items: baseline; justify-content: center; gap: 8px;
-  line-height: 1.05; padding-block: var(--sp-2);
+  display: flex; align-items: baseline; gap: 8px;
+  margin-top: var(--sp-3); line-height: 1;
 }
-.plan__price span { font-size: var(--fs-md); font-weight: 500; color: var(--color-text-muted); }
-.plan__sep { height: 1px; background: var(--color-border); margin-block: var(--sp-1); }
-.plan__head { padding-bottom: var(--sp-1); }
+.plan__num {
+  font-size: 2.5rem; font-weight: 700; color: var(--color-primary-dark);
+  letter-spacing: -.01em; line-height: 1;
+}
+.plan.is-featured .plan__num { font-size: 2.875rem; }
+.plan__cur { font-size: var(--fs-md); font-weight: 500; color: var(--color-text-muted); }
+.plan__save { font-size: var(--fs-xs); font-weight: 600; color: var(--color-primary-dark); margin-top: 6px; }
+.plan__save s { color: var(--color-text-muted); font-weight: 500; }
+.plan__save--ghost { display: none; }   /* على الجوال لا داعي لحجز مكانه — البطاقات تحت بعضها */
+.plan__eta {
+  display: flex; align-items: center; gap: 6px; margin-top: 8px;
+  font-size: var(--fs-xs); color: var(--color-text-muted);
+}
+.plan__eta svg { width: 15px; height: 15px; flex: none; color: var(--color-primary); }
+.plan__scope {
+  font-size: var(--fs-xs); color: var(--color-text-muted); line-height: 1.7;
+  margin-top: calc(var(--sp-1) * -1);
+}
+.plan__sep { height: 1px; background: var(--color-border); margin-block: var(--sp-2) 0; }
 .plan__items { display: grid; gap: var(--sp-2); font-size: var(--fs-sm); flex: 1; }
 .plan__dest {
   font-size: var(--fs-xs); color: var(--color-text-muted);
   text-align: center; margin-top: calc(var(--sp-2) * -1);
 }
-.plan__sep { margin-block: var(--sp-2) 0; }
 .plan__items li { display: flex; gap: var(--sp-2); align-items: flex-start; line-height: 1.55; }
 .plan__items svg { width: 16px; height: 16px; color: var(--color-primary); flex: none; margin-top: 5px; }
 .plan .btn { margin-top: var(--sp-1); }
 .pricing__note { margin-top: var(--sp-5); font-size: var(--fs-xs); color: var(--color-text-muted); text-align: center; }
+
+/* الزر العائم وشريط الإجراء يغطّيان بطاقات الأسعار على الجوال بلا داعٍ —
+   القسم نفسه يحمل ثلاثة أزرار واتساب */
+@media (max-width: 767px) {
+  body.in-pricing .wa-fab { opacity: 0; transform: scale(.92); pointer-events: none; }
+}
 
 /* «كيف نقسّم العمل؟» — كتلة مستقلة قبل الخطوات، لا جزء منها */
 .howblock {
@@ -761,7 +791,7 @@ input:focus, select:focus, textarea:focus {
               0 8px 22px rgba(34, 43, 38, .18);
   padding: 0; overflow: hidden; max-width: 54px;
   transition: max-width 340ms var(--ease-out), box-shadow var(--dur-2) var(--ease),
-              transform var(--dur) var(--ease);
+              transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
 }
 .wa-fab__icon { width: 54px; height: 54px; flex: none; display: grid; place-items: center; }
 .wa-fab__label { font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; padding-inline-end: 20px; }
@@ -936,7 +966,11 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
   .story__mark { height: 38px; }
   .story__inner { padding-block: 56px; }
   .story p { font-size: var(--fs-lg); }
-  .plans { grid-template-columns: repeat(3, 1fr); }
+  .plans { grid-template-columns: repeat(3, 1fr); gap: var(--sp-5); align-items: stretch; }
+  /* البطاقة المميزة أطول قليلًا من جارتيها — تمييز ثابت لا يعتمد على المرور بالمؤشر */
+  .plan.is-featured { margin-block: -12px; }
+  /* حجز سطر التوفير في الباقة بلا توفير حتى تنتهي الرؤوس الملوّنة على خط واحد */
+  .plan__save--ghost { display: block; visibility: hidden; }
   .steps { grid-template-columns: repeat(4, 1fr); gap: var(--sp-4); }
   .step { flex-direction: column; position: relative; z-index: 1; }
   /* مسار خافت يصل الأرقام من ١ إلى ٤ — يظهر أنها رحلة لا قائمة.

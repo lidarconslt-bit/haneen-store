@@ -377,25 +377,82 @@
     goToOrder();
   }
 
+  /* الأنواع المشمولة في الباقة وقيمتها مفردة — تُحسب من أسعار المنتجات في config
+     لا رقم مكتوب يدويًا: تغيير سعر منتج يعيد حساب «بدلًا من» و«توفّر» تلقائيًا */
+  function scopeInfo(pkg) {
+    var sc = pkg.scope;
+    if (!sc || !(sc.products || []).length) return null;
+    var map = {};
+    (CFG.products || []).forEach(function (x) { map[x.id] = x; });
+    var list = sc.products.map(function (id) { return map[id]; })
+      .filter(function (x) { return x && x.enabled !== false; });
+    if (!list.length) return null;
+
+    var names = list.map(function (x) { return x.name; });
+    var listPrice, text;
+    if (sc.mode === 'all') {
+      listPrice = list.reduce(function (t, x) { return t + (Number(x.price) || 0); }, 0);
+      text = 'يشمل: ' + names.join(' + ');
+    } else {
+      var n = Number(sc.count) || 1;
+      /* أقل سعر في المجموعة — أضيق ادعاء ممكن للتوفير */
+      var unit = Math.min.apply(null, list.map(function (x) { return Number(x.price) || 0; }));
+      listPrice = unit * n;
+      text = (n === 1 ? 'تختار نوعًا واحدًا من: ' : 'تختار ' + ar(n) + ' تصاميم من: ') + names.join(' · ');
+    }
+    return { text: text, listPrice: listPrice, save: listPrice - (Number(pkg.price) || 0) };
+  }
+
+  /* صياغة عربية سليمة لعدد الريالات */
+  function riyals(n) {
+    n = Number(n) || 0;
+    if (n === 1) return 'ريالًا واحدًا';
+    if (n === 2) return 'ريالين';
+    if (n <= 10) return ar(n) + ' ريالات';
+    return ar(n) + ' ريالًا';
+  }
+
   function renderPlans() {
+    var ops = CFG.operations || {};
+    var eta = ops.deliveryTime ? 'التسليم خلال ' + ops.deliveryTime : '';
+
     $('#plans-grid').innerHTML = on(CFG.packages).map(function (p, i) {
+      var sc = scopeInfo(p);
+      /* سطر التوفير يُحجز مكانه حتى في الباقة بلا توفير — تبقى حدود الرؤوس الملوّنة على خط واحد */
+      var save = (sc && sc.save > 0)
+        ? '<p class="plan__save">بدلًا من <s class="num">' + ar(sc.listPrice) + '</s> ريال · ' +
+          'توفّر ' + riyals(sc.save) + '</p>'
+        : '<p class="plan__save plan__save--ghost" aria-hidden="true">&nbsp;</p>';
       return '<article class="card plan' + (p.featured ? ' is-featured' : '') + '" data-reveal style="--d:' + (i * 90) + 'ms">' +
         (p.featured ? '<span class="plan__flag">الأكثر طلبًا</span>' : '') +
         '<div class="plan__head"><div class="plan__name">' + esc(p.name) + '</div>' +
-        '<div class="plan__note">' + esc(p.note || '') + '</div></div>' +
+        '<div class="plan__note">' + esc(p.note || '') + '</div>' +
+        '<p class="plan__price"><span class="num plan__num">' + ar(p.price) + '</span>' +
+        '<span class="plan__cur">ريال</span></p>' + save +
+        (eta ? '<p class="plan__eta">' + icon('clock') + '<span>' + esc(eta) + '</span></p>' : '') +
+        '</div>' +
+        (sc ? '<p class="plan__scope">' + esc(sc.text) + '</p>' : '') +
         '<ul class="plan__items">' + (p.items || []).map(function (it) {
           return '<li>' + icon('check') + '<span>' + esc(it) + '</span></li>';
         }).join('') + '</ul>' +
-        '<div class="plan__sep"></div>' +
-        '<div class="plan__price"><span class="num">' + p.price + '</span><span>ريال</span></div>' +
         '<a href="' + esc(waLink(packageMessage(p))) + '" class="btn btn--primary"' +
         ' target="_blank" rel="noopener">اطلبها الآن</a>' +
         '<span class="plan__dest">يفتح محادثة واتساب</span></article>';
     }).join('');
 
-    var ops = CFG.operations || {};
-    txt('#pricing-note', 'الباقات تُطلب عبر واتساب مباشرة. الأسعار تشمل ' + revisions(ops.freeRevisions) +
-      '، والتعديل الإضافي بـ' + ar(ops.extraRevisionPrice) + ' ريالًا. الدفع بالتحويل البنكي.');
+    var note = 'الباقات تُطلب عبر واتساب مباشرة. الأسعار تشمل ' + revisions(ops.freeRevisions) +
+      '، والتعديل الإضافي بـ' + ar(ops.extraRevisionPrice) + ' ريالًا. الدفع بالتحويل البنكي.';
+    /* سعر البداية من أرخص نوع في config لا من نص ثابت — والجملة تظهر فقط إن كانت الأسعار متفاوتة فعلًا */
+    var single = on(CFG.products).filter(function (x) { return !x.comingSoon; });
+    if (single.length) {
+      var prices = single.map(function (x) { return Number(x.price) || 0; });
+      var base = Math.min.apply(null, prices);
+      var varies = Math.max.apply(null, prices) > base;
+      if (varies) {
+        note += ' سعر التصميم المفرد يختلف حسب النوع، ويبدأ من ' + riyals(base) + '.';
+      }
+    }
+    txt('#pricing-note', note);
   }
 
   /* رسالة واتساب جاهزة للإرسال — تحمل اسم الباقة وسعرها */
@@ -929,20 +986,27 @@
 
   /* ---------- شريط الإجراء ---------- */
   function initCtaBar() {
-    var bar = $('#cta-bar'), hero = $('.hero'), order = $('#order');
+    var bar = $('#cta-bar'), hero = $('.hero'), order = $('#order'), pricing = $('#pricing');
     if (!bar || !hero || !order) return;
     var ticking = false;
 
     var header = $('.header');
+    function inView(el, ratio) {
+      if (!el) return false;
+      var r = el.getBoundingClientRect();
+      return r.top < window.innerHeight * ratio && r.bottom > 0;
+    }
     function sync() {
       ticking = false;
       if (header) header.classList.toggle('is-stuck', window.scrollY > 8);
       var past = hero.getBoundingClientRect().bottom < 0;
-      var o = order.getBoundingClientRect();
-      var inOrder = o.top < window.innerHeight * 0.85 && o.bottom > 0;
-      var show = past && !inOrder;
+      var inOrder = inView(order, 0.85);
+      /* قسم الأسعار يحمل ثلاثة أزرار واتساب — الشريط والزر العائم يغطّيان البطاقات بلا فائدة */
+      var inPricing = inView(pricing, 0.85);
+      var show = past && !inOrder && !inPricing;
       bar.classList.toggle('is-shown', show);
       document.body.classList.toggle('cta-visible', show);
+      document.body.classList.toggle('in-pricing', inPricing);
     }
     /* خانق زمني بدل requestAnimationFrame — يعمل حتى في التبويبات الخلفية */
     function onScroll() {

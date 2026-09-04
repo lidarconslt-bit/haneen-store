@@ -218,6 +218,10 @@
         "تعديل مجاني واحد",
         "ملف طباعة + ملف رقمي"
       ],
+      "scope": {
+        "mode": "all",
+        "products": ["edu", "worksheet", "cards"]
+      },
       "featured": true,
       "enabled": true,
       "order": 2
