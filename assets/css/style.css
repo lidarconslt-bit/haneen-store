@@ -4,6 +4,28 @@
    فتغيير الهوية كاملة = تعديل كتلة :root فقط.
    ========================================================= */
 
+/* ============ الخط: XB Shafigh ============
+   عائلة خط واحدة للعربية واللاتينية معًا.
+   الملفات تحمل وزنين حقيقيين فقط: Regular (400) و Bold (700) —
+   لا يوجد Medium/SemiBold في هذا الخط، فلا تُصنع أوزان وهمية.
+   المتصفح يطابق 500 → 400 و 600 → 700 تلقائيًا دون تخليق (synthesis). */
+@font-face {
+  font-family: "XB Shafigh";
+  src: url("../fonts/XBShafigh-Regular.woff2") format("woff2"),
+       url("../fonts/XB%20Shafigh.ttf")        format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "XB Shafigh";
+  src: url("../fonts/XBShafigh-Bold.woff2") format("woff2"),
+       url("../fonts/XB%20ShafighBd.ttf")   format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* --- الألوان --- */
   --color-bg:            #FAF6EE;
@@ -49,8 +71,8 @@
   --shadow-md: 0 4px 14px rgba(34, 43, 38, .07);
 
   /* --- الطباعة --- */
-  --font:         "Readex Pro", "Segoe UI", Tahoma, system-ui, sans-serif;
-  --font-display: "Marhey", "Readex Pro", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font:         "XB Shafigh", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-display: var(--font);   /* عائلة واحدة — أُبقي المتغيّر لأن أنماطًا عدة تشير إليه */
   --fs-xs: .8125rem;   /* 13 */
   --fs-sm: .875rem;    /* 14 */
   --fs-md: 1rem;       /* 16 */
@@ -101,13 +123,23 @@ p  { margin: 0; }
 img, svg { max-width: 100%; display: block; }
 a  { color: var(--color-primary-dark); text-decoration: none; }
 
-/* نظام خطين: Marhey للعناوين والأرقام الكبيرة، Readex Pro لكل ما يُقرأ */
+/* عناصر النموذج والأزرار لا ترث الخط من body في المتصفحات — تُوحَّد صراحةً.
+   العائلة فقط: الأحجام والأوزان تبقى كما هي في أنماط كل عنصر. */
+button, input, select, textarea, optgroup {
+  font-family: var(--font);
+}
+
+/* عائلة واحدة: XB Shafigh — العناوين والأرقام الكبيرة بوزن Bold، وما يُقرأ بوزن Regular */
 h1, h2, h3,
 .plan__name, .plan__num, .total__value, .order-no {
   font-family: var(--font-display);
   letter-spacing: -.005em;
 }
 ul { margin: 0; padding: 0; list-style: none; }
+
+/* السمة hidden تسبق أي display من الأنماط — وإلا ظهر ما يفترض أنه مخفي
+   (إشعار المسودّة وملاحظة الأسلوب) */
+[hidden] { display: none !important; }
 
 /* الأرقام لاتينية دائمًا لتفادي كسر الاتجاه */
 .num, .price, input[type="tel"], .iban-value {
@@ -619,7 +651,8 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 /* الزر العائم وشريط الإجراء يغطّيان بطاقات الأسعار على الجوال بلا داعٍ —
    القسم نفسه يحمل ثلاثة أزرار واتساب */
 @media (max-width: 767px) {
-  body.in-pricing .wa-fab { opacity: 0; transform: scale(.92); pointer-events: none; }
+  body.in-pricing .wa-fab,
+  body.in-order .wa-fab { opacity: 0; transform: scale(.92); pointer-events: none; }
 }
 
 /* «كيف نقسّم العمل؟» — كتلة مستقلة قبل الخطوات، لا جزء منها */
@@ -744,7 +777,10 @@ input:focus, select:focus, textarea:focus {
 .error-msg {
   display: none; align-items: center; gap: 6px;
   font-size: var(--fs-xs); color: var(--color-danger); margin-top: 6px;
+  line-height: 1.55;
 }
+/* بلا أبعاد صريحة يأخذ الـSVG مقاسه الجوهري (300×150) فيتمدد السطر */
+.error-msg svg { width: 16px; height: 16px; flex: none; }
 .field.has-error .error-msg { display: flex; }
 
 /* شبكة اختيارات (بدل الكتابة) */
@@ -841,14 +877,34 @@ input:focus, select:focus, textarea:focus {
 .total {
   position: sticky; bottom: 0; z-index: 5;
   background: var(--color-surface); border: 1px solid var(--color-border);
-  border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4);
-  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3);
+  border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3);
+  display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--sp-3); row-gap: 2px;
   margin-top: var(--sp-4); box-shadow: var(--shadow-md);
 }
 .total__label { font-size: var(--fs-xs); color: var(--color-text-muted); }
-.total__value { font-size: var(--fs-xl); font-weight: 700; color: var(--color-primary-dark); }
+.total__value {
+  font-size: var(--fs-xl); font-weight: 700; color: var(--color-primary-dark);
+  white-space: nowrap;   /* «٩٩ ريال» وحدة واحدة لا تنكسر سطرين */
+}
+/* التفصيل على سطر مستقل بعرض كامل — فلا يزاحم الرقم ولا يُقتطع */
+.total__breakdown {
+  flex: 1 1 100%; font-size: 11.5px; color: var(--color-text-muted);
+  line-height: 1.55; text-align: start;
+}
+.total__breakdown b { font-weight: 500; color: var(--color-text); }
 .form-nav { display: flex; gap: var(--sp-2); margin-top: var(--sp-4); }
 .form-nav .btn { flex: 1; }
+
+/* فشل الإرسال — مسار خطأ صريح بدل شاشة نجاح كاذبة */
+.sendfail { display: block; }
+.sendfail b { display: block; margin-bottom: 4px; }
+.sendfail p { font-size: var(--fs-xs); line-height: 1.7; }
+.sendfail__acts { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
+.sendfail__acts .btn { flex: 1 1 160px; }
+
+/* حالة الطلب في شاشة النجاح */
+#success-state:empty { display: none; }
+#success-state { margin-bottom: var(--sp-4); }
 
 /* حالة النجاح */
 .success { display: none; }

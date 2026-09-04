@@ -27,10 +27,10 @@
 <meta name="twitter:title" content="حنين — تصاميم تعليمية وبصرية حسب الطلب">
 <meta name="twitter:description" content="نحوّل محتواك إلى تصميم يُفهم من أول نظرة.">
 <meta name="twitter:image" content="https://lidarconslt-bit.github.io/haneen-store/assets/img/og-cover.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Marhey:wght@500;600;700&family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=35">
+<!-- الخط مستضاف ذاتيًا: XB Shafigh بوزنيه الحقيقيين — لا اعتماد على خطوط خارجية -->
+<link rel="preload" href="assets/fonts/XBShafigh-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/XBShafigh-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css?v=36">
 </head>
 <body id="top">
 
@@ -277,16 +277,16 @@
         <!-- الخطوة 2 -->
         <div class="fstep" data-step="2">
           <div class="field">
+            <label for="f-topic">موضوع التصميم <span class="req">*</span></label>
+            <input type="text" id="f-topic" name="topic" placeholder="مثال: أركان الإسلام، أو دورة حياة الفراشة" maxlength="120">
+            <p class="error-msg"><svg aria-hidden="true"><use href="#i-alert"/></svg>اكتب موضوع التصميم</p>
+          </div>
+          <div class="field">
             <label for="f-subject">المجال
               <span class="field__hint">اختياري — يساعدنا على اختيار الرسومات المناسبة.</span>
             </label>
             <select id="f-subject" name="subject"></select>
             </div>
-          <div class="field">
-            <label for="f-topic">موضوع التصميم <span class="req">*</span></label>
-            <input type="text" id="f-topic" name="topic" placeholder="مثال: أركان الإسلام، أو دورة حياة الفراشة" maxlength="120">
-            <p class="error-msg"><svg aria-hidden="true"><use href="#i-alert"/></svg>اكتب موضوع التصميم</p>
-          </div>
           <div class="field">
             <label for="f-content">المحتوى
               <span class="field__hint">يمكن لصق المحتوى هنا، أو كتابة «سأرسله عبر واتساب» وإرساله لاحقًا مع رقم الطلب.</span>
@@ -344,7 +344,7 @@
             <div class="total__label">إجمالي طلبك</div>
             <div class="total__value"><span class="num" id="total-value">0</span> ريال</div>
           </div>
-          <div style="font-size:var(--fs-xs);color:var(--color-text-muted);text-align:left" id="total-breakdown"></div>
+          <div class="total__breakdown" id="total-breakdown"></div>
         </div>
 
         <div id="submit-error" style="margin-top:var(--sp-3)"></div>
@@ -364,6 +364,8 @@
           <p style="color:var(--color-text-muted);margin-top:var(--sp-2)" id="success-body"></p>
           <div class="order-no"><span id="order-number"></span></div>
         </div>
+
+        <div id="success-state"></div>
 
         <div class="paybox">
           <h3 style="margin-bottom:var(--sp-3)">بيانات التحويل</h3>

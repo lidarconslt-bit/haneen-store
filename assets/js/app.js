@@ -593,6 +593,7 @@
     $('#btn-edit-summary').addEventListener('click', function () { gotoStep(1); });
     $('#btn-draft-clear').addEventListener('click', function () { clearDraft(); resetForm(); });
     $('#order-form').addEventListener('submit', submitOrder);
+    $('#btn-submit').textContent = submitLabel();
     $('#btn-copy').addEventListener('click', copyIban);
     $('#btn-new').addEventListener('click', function () { clearDraft(); resetForm(); });
 
@@ -720,21 +721,26 @@
     var unit = pr.extraStylePrice == null ? 15 : pr.extraStylePrice;
 
     var total = p ? p.price : 0, parts = [];
-    if (p) parts.push(p.name + ' ' + p.price);
+    if (p) parts.push(esc(p.name) + ' <b>' + ar(p.price) + '</b>');
 
     /* «أسلوب آخر» لا يُحتسب ضمن الأساليب المدفوعة */
     var paidExtra = Math.max(0, state.styles.length - free);
     var stylesCost = paidExtra * unit;
-    if (stylesCost) parts.push('أساليب إضافية +' + stylesCost);
+    if (stylesCost) parts.push('أساليب إضافية <b>+' + ar(stylesCost) + '</b>');
 
+    /* كل إضافة باسمها — «+15» مجرّدًا لا يقول للمعلمة مقابل ماذا دفعت */
     var ad = CFG.addons || {};
     Object.keys(state.extras).forEach(function (k) {
-      if (state.extras[k] && ad[k]) { total += ad[k].price; parts.push('+' + ad[k].price); }
+      if (state.extras[k] && ad[k]) {
+        total += ad[k].price;
+        parts.push(esc(ad[k].label) + ' <b>+' + ar(ad[k].price) + '</b>');
+      }
     });
     total += stylesCost;
 
     bump(total);
-    txt('#total-breakdown', p ? parts.join(' · ') : 'اختر نوع التصميم للبدء');
+    var bd = $('#total-breakdown');
+    if (bd) bd.innerHTML = p ? parts.join(' · ') : 'اختر نوع التصميم للبدء';
     state.total = total;
     updateStyleNote(free, unit, paidExtra);
     return total;
@@ -785,7 +791,21 @@
     return 'HN-' + key + '-' + ('00' + seq).slice(-3);
   }
 
-  /* ---------- الإرسال ---------- */
+  /* ---------- الإرسال ----------
+     ثلاث حالات لا واحدة:
+       saved  — وصل الطلب إلى الجدول
+       unsent — لا يوجد endpoint مضبوط، فواتساب هو طريق الإتمام
+       failed — انقطع الاتصال: خطأ صريح، ولا شاشة نجاح أبدًا */
+  var pendingOrder = null;
+
+  function hasEndpoint() {
+    return !!String(((CFG.integrations || {}).ordersEndpoint) || '').trim();
+  }
+
+  function submitLabel() {
+    return hasEndpoint() ? 'إرسال الطلب' : 'جهّز طلبي';
+  }
+
   function submitOrder(e) {
     e.preventDefault();
     if (!validateStep(3)) return;
@@ -798,38 +818,72 @@
       return;
     }
 
+    /* رقم الطلب يُحجز مرة واحدة فلا يتغيّر عند إعادة المحاولة */
+    if (!pendingOrder) pendingOrder = collect();
+    sendOrder(pendingOrder);
+  }
+
+  function sendOrder(payload) {
     var btn = $('#btn-submit');
     btn.disabled = true;
     btn.textContent = 'جارٍ الإرسال…';
     $('#submit-error').innerHTML = '';
 
-    var payload = collect();
     saveLocal(payload);
 
-    var url = (CFG.integrations || {}).ordersEndpoint;
-    if (!url) { finish(payload); return; }
+    if (!hasEndpoint()) { finish(payload, 'unsent'); return; }
 
     var ctrl = new AbortController();
     var to = setTimeout(function () { ctrl.abort(); }, 8000);
 
-    fetch(url, {
+    fetch((CFG.integrations || {}).ordersEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
       signal: ctrl.signal,
       redirect: 'follow'
     })
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
       .then(function (res) {
         clearTimeout(to);
+        if (res && res.error) throw new Error(res.error);
         if (res && res.orderNo) payload.orderNo = res.orderNo;
-        finish(payload);
+        finish(payload, 'saved');
       })
       .catch(function (err) {
         clearTimeout(to);
-        console.warn('[حنين] تعذّر تسجيل الطلب في الجدول:', err);
-        finish(payload);
+        console.warn('[حنين] تعذّر تسجيل الطلب:', err);
+        failSend(payload);
       });
+  }
+
+  /* فشل الإرسال: لا نعرض نجاحًا، ولا نمسح المسودّة، ونترك مخرجين واضحين */
+  function failSend(payload) {
+    var btn = $('#btn-submit');
+    btn.disabled = false;
+    btn.textContent = submitLabel();
+
+    $('#submit-error').innerHTML =
+      '<div class="alert alert--error sendfail" role="alert">' +
+        icon('alert') +
+        '<div style="flex:1">' +
+          '<b>تعذّر إرسال طلبك</b>' +
+          '<p>انقطع الاتصال قبل أن يصل الطلب. بياناتك محفوظة ولم تضع — ' +
+          'أعد المحاولة، أو أرسل الطلب عبر واتساب مباشرة.</p>' +
+          '<div class="sendfail__acts">' +
+            '<button type="button" class="btn btn--primary btn--sm" id="btn-retry">أعد المحاولة</button>' +
+            '<a class="btn btn--whatsapp btn--sm" id="fail-wa" target="_blank" rel="noopener" href="' +
+              esc(waLink(orderMessage(payload))) + '">إرسال عبر واتساب</a>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    var r = $('#btn-retry');
+    if (r) r.addEventListener('click', function () { sendOrder(payload); });
+    $('#submit-error').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function namesOf(list, ids) {
@@ -877,12 +931,21 @@
       ['المستوى', d.level],
       ['الموضوع', [d.topic, d.subject].filter(Boolean).join(' — ')],
       ['إضافات', d.extras],
+      ['التسليم', deliveryText()],
       ['الإجمالي', d.amount + ' ريال']
     ].filter(function (r) { return r[1]; });
 
     $('#summary-list').innerHTML = rows.map(function (r) {
       return '<div class="summary__row"><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
     }).join('');
+  }
+
+  /* مدة التسليم — تتحوّل إلى المستعجل تلقائيًا إن اختيرت إضافة الاستعجال */
+  function deliveryText() {
+    var ops = CFG.operations || {};
+    var rush = state.extras.rush && (CFG.addons || {}).rush;
+    var t = rush ? (ops.rushDeliveryTime || ops.deliveryTime) : ops.deliveryTime;
+    return t ? ('خلال ' + t + (rush ? ' (مستعجل)' : '')) : '';
   }
 
   function collectLight() {
@@ -909,15 +972,27 @@
     } catch (e) { /* تجاهل */ }
   }
 
-  function finish(p) {
+  function finish(p, mode) {
     clearDraft();
+    pendingOrder = null;
     txt('#order-number', p.orderNo);
     txt('#pay-amount', p.amount);
     $('#btn-wa').href = waLink(orderMessage(p));
+
+    /* الطلب لم يصل إلى جدول بعد — واتساب خطوة لازمة لا اختيارية */
+    var st = $('#success-state');
+    if (st) {
+      st.innerHTML = (mode === 'unsent')
+        ? '<div class="alert alert--warn" role="status">' + icon('alert') +
+          '<span>طلبك جاهز ولم يصل إلينا بعد. ' +
+          'اضغط <b>إرسال الطلب عبر واتساب</b> لنبدأ التنفيذ.</span></div>'
+        : '';
+    }
+
     $('#order-form').style.display = 'none';
     $('#success').classList.add('is-shown');
     $('#success').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    var b = $('#btn-submit'); b.disabled = false; b.textContent = 'إرسال الطلب';
+    var b = $('#btn-submit'); b.disabled = false; b.textContent = submitLabel();
   }
 
   function orderMessage(p) {
@@ -1086,6 +1161,8 @@
       bar.classList.toggle('is-shown', show);
       document.body.classList.toggle('cta-visible', show);
       document.body.classList.toggle('in-pricing', inPricing);
+      /* الزر العائم يغطّي شريط الإجمالي وزر الإرسال على الجوال */
+      document.body.classList.toggle('in-order', inOrder);
     }
     /* خانق زمني بدل requestAnimationFrame — يعمل حتى في التبويبات الخلفية */
     function onScroll() {

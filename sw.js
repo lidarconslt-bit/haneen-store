@@ -2,7 +2,7 @@
    السياسة: الشبكة أولًا دائمًا، والذاكرة احتياط عند انقطاع الاتصال فقط.
    السبب: الأسعار وبيانات التحويل يجب ألا تُعرض من نسخة قديمة أبدًا. */
 
-var CACHE = 'haneen-v13';
+var CACHE = 'haneen-v14';
 var SHELL = [
   './',
   './index.html',
@@ -37,7 +37,7 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
 
   var url = new URL(req.url);
-  if (url.origin !== location.origin) return; /* الخطوط وApps Script تمر مباشرة */
+  if (url.origin !== location.origin) return; /* Apps Script يمر مباشرة — الخط صار محليًا فيُخزَّن كبقية الأصول */
 
   e.respondWith(
     fetch(req)
