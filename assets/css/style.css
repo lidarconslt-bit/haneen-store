@@ -316,11 +316,19 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 }
 .header {
   position: sticky; top: 0; z-index: 50;
-  /* بلا حدّ فاصل: الخلفية مطابقة للصفحة فيبدو الهيدر جزءًا من التكوين.
-     عند الالتصاق يظهر عمق خفيف بدل خط. */
-  background: var(--color-bg);
+  /* فوق الهيرو: شفاف تمامًا ونصوصه بيضاء، فيبدو جزءًا من المشهد.
+     بعد التمرير (is-stuck) يعود سطحًا فاتحًا كبقية الصفحة. */
+  background: transparent;
   transition: background var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease);
 }
+.header:not(.is-stuck) { color: #fff; }
+.header:not(.is-stuck) .logo__tag {
+  color: rgba(255, 255, 255, .82); border-inline-start-color: rgba(255, 255, 255, .3);
+}
+/* تبديل نسختَي الشعار بلا JS إضافي */
+.logo__img--light-bg { display: none; }
+.header.is-stuck .logo__img--dark-bg { display: none; }
+.header.is-stuck .logo__img--light-bg { display: block; }
 .header.is-stuck {
   background: rgba(250, 246, 238, .93);
   backdrop-filter: blur(12px);
@@ -335,87 +343,161 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 }
 /* زر الطلب هو الإجراء الوحيد في الهيدر — يُدفع إلى الطرف المقابل للشعار */
 .header__cta { margin-inline-start: auto; flex: none; padding-inline: 18px; }
+/* زر الهيدر فوق المشهد يأخذ الهيئة الزجاجية نفسها */
+.header:not(.is-stuck) .header__cta {
+  color: #fff; background: rgba(20, 15, 9, .32);
+  border: 1px solid rgba(255, 255, 255, .42);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(16, 11, 6, .2);
+}
+.header:not(.is-stuck) .header__cta:hover { background: rgba(20, 15, 9, .44); }
 
+/* ---- أزرار زجاجية للهيرو ----
+   زجاج فعلي: صبغة داكنة شفافة + blur + حدّ أبيض رقيق + انعكاس علوي خفيف
+   + ظل ناعم. الصبغة داكنة لا بيضاء لأن القياس أثبت أن الطلاء الأبيض يرفع
+   سطوع الخلفية فيهبط النص الأبيض إلى ‎2.5:1؛ الداكنة تُبقيه فوق ‎5.4:1. */
+.btn--glass {
+  position: relative; overflow: hidden;
+  color: #fff;
+  background-color: rgba(18, 14, 9, .28);
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, .04) 42%, rgba(255, 255, 255, 0) 62%);
+  border: 1px solid rgba(255, 255, 255, .30);
+  border-radius: var(--r-sm);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  backdrop-filter: blur(14px) saturate(125%);
+  box-shadow:
+    0 8px 26px rgba(14, 10, 5, .28),
+    inset 0 1px 0 rgba(255, 255, 255, .30),
+    inset 0 -1px 0 rgba(255, 255, 255, .07);
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+              transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.btn--glass-lead {
+  background-color: rgba(62, 92, 76, .58);      /* أخضر الهوية بشفافية */
+  border-color: rgba(255, 255, 255, .42);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn--glass:hover {
+    background-color: rgba(18, 14, 9, .38); border-color: rgba(255, 255, 255, .48);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(14, 10, 5, .34), inset 0 1px 0 rgba(255, 255, 255, .38), inset 0 -1px 0 rgba(255, 255, 255, .08);
+  }
+  .btn--glass-lead:hover { background-color: rgba(62, 92, 76, .70); border-color: rgba(255, 255, 255, .60); }
+}
+.btn--glass:active { transform: translateY(0); }
+/* بلا دعم backdrop-filter: تُرفع العتامة فقط — التباين محفوظ أصلًا */
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .btn--glass { background-color: rgba(18, 14, 9, .52); }
+  .btn--glass-lead { background-color: rgba(62, 92, 76, .76); }
+}
 
 /* ============ Hero ============ */
-.hero { padding-block: var(--sp-5) var(--sp-7); }
-.hero__title { max-width: 16ch; }
-.hero__sub { margin-top: var(--sp-4); font-size: var(--fs-lg); color: var(--color-text-muted); max-width: 46ch; }
-.hero__actions { margin-top: var(--sp-5); display: flex; flex-wrap: wrap; gap: var(--sp-3); }
-.hero__actions .btn { flex: 1 1 190px; }
-.hero__for {
-  margin-top: var(--sp-5); font-size: var(--fs-sm); color: var(--color-text-muted);
-  padding-inline-start: var(--sp-3); border-inline-start: 3px solid var(--color-accent-light);
-  line-height: 1.7;
+/* مشهد سينمائي بعرض الصفحة. تحليل الصورة قاد التكوين: النصف الأيسر داكن
+   وهادئ (سطوع 60، انشغال منخفض) والأيمن نافذة مشمسة (سطوع 117). فالنص
+   الأبيض يسارًا حيث التباين قائم أصلًا، والتدرّج يقوّيه هناك وحده — فتبقى
+   الشمس والتفاصيل يمينًا مشرقة بلا تعتيم. */
+.hero {
+  position: relative; isolation: isolate;
+  min-height: 86svh;
+  display: flex; align-items: center;
+  margin-top: calc(var(--header-h) * -1);      /* الهيدر يطفو داخل المشهد */
+  padding-block: calc(var(--header-h) + var(--sp-5)) calc(var(--sp-6) + 46px);
+  overflow: hidden;
+  background: #241c12;                          /* أرضية دافئة أثناء التحميل */
 }
-.hero__trust { margin-top: var(--sp-4); display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); font-size: var(--fs-sm); color: var(--color-text-muted); }
-.hero__trust li { display: flex; align-items: center; gap: 6px; }
-.hero__trust svg { width: 16px; height: 16px; color: var(--color-primary); flex: none; }
-.hero { position: relative; isolation: isolate; }
-
-/* حزمتا ضوء نافذة تعبران المشهد — الطبقة الوحيدة خلف المحتوى */
-.hero__beam {
-  position: absolute; z-index: -1; pointer-events: none;
-  inset-block: calc(var(--sp-7) * -1) calc(var(--sp-6) * -1);
-  inset-inline: calc(50% - 50vw);
+/* طبقتان لأن الحركتين تكتبان transform: الغلاف يحمل الدخول السينمائي،
+   والصورة تحمل عمق التمرير — فلا تُلغي إحداهما الأخرى. */
+.hero__bgwrap {
+  position: absolute; inset: 0; z-index: -2; display: block; overflow: hidden;
+}
+.hero__bg {
+  width: 100%; height: 100%; display: block;
+  object-fit: cover;
+  object-position: 44% 50%;                     /* الجوال: أعلى قصّ يحفظ الدفء ويبقى فوق تباين AA (‎5.1:1) */
+  will-change: transform;
+}
+/* التدرّج يتبع مكان النص، لا العكس.
+   الجوال: النص يملأ العرض، فالتدرّج رأسي شامل ومحسوب على تباين ‎4.5:1.
+   سطح المكتب: النص يسارًا، فالتدرّج أفقي يقوّي اليسار وحده وتبقى الشمس يمينًا. */
+.hero__scrim {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
-    linear-gradient(112deg, transparent 30%, rgba(255,251,240,.95) 38%, rgba(255,251,240,.95) 52%, transparent 60%),
-    linear-gradient(112deg, transparent 62%, rgba(255,251,240,.72) 68%, rgba(255,251,240,.72) 76%, transparent 83%);
-  filter: blur(14px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0 74%, rgba(0,0,0,.5) 90%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0 74%, rgba(0,0,0,.5) 90%, transparent 100%);
+    linear-gradient(to bottom,
+      rgba(20, 15, 9, .70) 0%, rgba(20, 15, 9, .54) 30%,
+      rgba(20, 15, 9, .56) 55%, rgba(20, 15, 9, .76) 72%, rgba(20, 15, 9, .80) 100%);
+}
+@media (min-width: 768px) {
+  .hero__scrim {
+    background:
+      linear-gradient(to left, rgba(20, 15, 9, 0) 30%, rgba(20, 15, 9, .46) 52%, rgba(20, 15, 9, .78) 76%, rgba(20, 15, 9, .86) 100%),
+      linear-gradient(to bottom, rgba(20, 15, 9, .42) 0%, rgba(20, 15, 9, .06) 24%, rgba(20, 15, 9, .10) 62%, rgba(20, 15, 9, .58) 100%);
+  }
+}
+.hero__inner { position: relative; z-index: 1; flex: 1 1 100%; min-width: 0; }
+/* الكتلة تُدفع إلى الجهة الداكنة الهادئة من الصورة (يسارًا)، فيبقى
+   ضوء النافذة يمينًا مشرقًا بلا تعتيم. النص داخلها يبقى RTL طبيعيًا. */
+.hero__copy { max-width: 34rem; margin-inline-start: auto; }
+
+.hero__title { color: #fff; max-width: 17ch; text-shadow: 0 2px 22px rgba(16, 11, 6, .5); }
+.hero__sub {
+  margin-top: var(--sp-3); font-size: var(--fs-md); max-width: 38ch;
+  color: rgba(255, 255, 255, .90); text-shadow: 0 1px 16px rgba(16, 11, 6, .55);
+}
+.hero__actions { margin-top: var(--sp-4); display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.hero__actions .btn { flex: 1 1 190px; }
+/* الجمهور والمزايا عناصر مساندة: أصغر وأهدأ وأقرب بعضها إلى بعض،
+   فلا تُقرأ ككتلة معلومات ثانية تزاحم العنوان والأزرار. */
+.hero__for {
+  margin-top: var(--sp-4); font-size: var(--fs-xs); line-height: 1.6;
+  color: rgba(255, 255, 255, .85);
+  padding-inline-start: 10px;
+  border-inline-start: 2px solid rgba(243, 217, 164, .38);
+  text-shadow: 0 1px 12px rgba(16, 11, 6, .5);
+}
+.hero__trust {
+  margin-top: var(--sp-3); display: flex; flex-wrap: wrap;
+  gap: 4px var(--sp-3); font-size: var(--fs-xs);
+  color: rgba(255, 255, 255, .85); text-shadow: 0 1px 12px rgba(16, 11, 6, .5);
+}
+.hero__trust li { display: flex; align-items: center; gap: 5px; }
+.hero__trust svg { width: 13px; height: 13px; color: var(--color-accent-light); opacity: .85; flex: none; }
+
+/* ---- مؤشر النزول ---- */
+.hero__more {
+  position: absolute; z-index: 2; bottom: var(--sp-5); left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  color: rgba(255, 255, 255, .9); text-decoration: none;
+}
+.hero__more-row { display: flex; align-items: center; gap: 7px; font-size: var(--fs-sm); font-weight: 600; }
+.hero__more-chev { width: 15px; height: 15px; }
+.hero__more-wave { width: 58px; height: 8px; opacity: .5; }
+.hero__more:hover { color: #fff; }
+@keyframes heroMoreIn { to { opacity: 1; } }
+@keyframes heroNudge { 0%, 72%, 100% { transform: translateY(0); } 84% { transform: translateY(2.5px); } }
+
+@media (min-width: 768px) {
+  .hero { min-height: 88svh; padding-block: calc(var(--header-h) + var(--sp-7)) calc(var(--sp-7) + 56px); }
+  .hero__bg { object-position: 62% 50%; }
+  .hero__sub { margin-top: var(--sp-4); font-size: var(--fs-lg); max-width: 44ch; }
+  .hero__actions { margin-top: var(--sp-5); gap: var(--sp-3); }
+  .hero__for { margin-top: var(--sp-5); font-size: var(--fs-sm); line-height: 1.7; padding-inline-start: var(--sp-3); max-width: 30rem; color: rgba(255, 255, 255, .90); }
+  .hero__trust { margin-top: var(--sp-4); gap: var(--sp-2) var(--sp-4); font-size: var(--fs-sm); max-width: 30rem; color: rgba(255, 255, 255, .92); }
+  .hero__trust svg { width: 15px; height: 15px; }
+  .hero__more-row { font-size: var(--fs-md); }
+  .hero__more-chev { width: 17px; height: 17px; }
+  .hero__more-wave { width: 72px; }
 }
 
-.hero__stage { position: relative; }
-/* ظل التلامس — يُجلس الأعمال على المشهد */
-.hero__stage::after {
-  content: ''; position: absolute; z-index: 0; pointer-events: none;
-  inset-inline: 8%; bottom: -18px; height: 42px; border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 50%, rgba(34,43,38,.16), rgba(34,43,38,0) 70%);
-  filter: blur(11px);
+/* دخول سينمائي هادئ مرة واحدة + عمق خفيف عند التمرير (يُدار من JS) */
+/* الحركة كلها داخل no-preference: فالمؤشر ظاهر افتراضيًا، وإن تعذّرت
+   الحركة أو فُضّل تقليلها يبقى مرئيًا بلا تأخير ولا نبض. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero__bgwrap { animation: heroSettle 1700ms var(--ease-out) both; }
+  @keyframes heroSettle { from { transform: scale(1.05); } to { transform: scale(1); } }
+  .hero__more { opacity: 0; animation: heroMoreIn 900ms var(--ease-out) 1200ms forwards; }
+  .hero__more-chev { animation: heroNudge 3.2s var(--ease) infinite; }
 }
-
-.hero__media { position: relative; z-index: 1; margin-top: var(--sp-6);
-  display: grid; grid-template-columns: 1fr .36fr; gap: var(--sp-2);
-  align-items: start; max-width: 308px; }
-
-/* رزمة الأوراق: حواف تظهر خلف العمل فتعطيه سماكة مادية */
-.hero__sheets { position: relative; aspect-ratio: 3/4; }
-.hero__sheet {
-  position: absolute; inset: 0; border-radius: var(--r-md);
-  background: var(--color-surface); border: 1px solid var(--color-border);
-}
-.hero__sheet--3 { transform: translate(-14px, -14px) rotate(-2.6deg); opacity: .55; }
-.hero__sheet--2 { transform: translate(-7px, -7px) rotate(-1.2deg); opacity: .8; }
-
-/* العمل الرئيسي: ثلاثة أعمال تتناوب بتلاشٍ طويل وزحف مقياس */
-.hero__stack {
-  position: absolute; inset: 0; border-radius: var(--r-md); overflow: hidden;
-  border: 1px solid var(--color-border); background: var(--color-surface);
-  box-shadow: 0 2px 4px rgba(34,43,38,.06), 0 22px 46px rgba(34,43,38,.17);
-}
-.hero__stack i {
-  position: absolute; inset: 0; opacity: 0;
-  background: var(--color-surface) center / cover no-repeat;
-  animation: heroCycle 19.5s cubic-bezier(.37, 0, .63, 1) infinite;
-}
-@keyframes heroCycle {
-  0%     { opacity: 0; transform: scale(1.055); }
-  10.26% { opacity: 1; }
-  33.33% { opacity: 1; }
-  43.59% { opacity: 0; transform: scale(1); }
-  100%   { opacity: 0; transform: scale(1.055); }
-}
-
-/* العمل المصاحب */
-.hero__work {
-  aspect-ratio: 3/4; border-radius: var(--r-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface) center / cover no-repeat;
-  box-shadow: 0 12px 26px rgba(34,43,38,.13);
-  animation: heroMate 26s cubic-bezier(.37, 0, .63, 1) infinite alternate;
-}
-@keyframes heroMate { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 
 /* ============ شريط الثقة ============ */
 .trustbar { background: var(--color-primary); color: #fff; }
@@ -1246,7 +1328,6 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
   .gallery.is-collapsed .work:nth-child(5),
   .gallery.is-collapsed .work:nth-child(6) { display: flex; }
   .gallery.is-collapsed .work:nth-child(n+7) { display: none; }
-  .hero__media { max-width: 380px; }
   .trustbar ul { grid-template-columns: repeat(4, 1fr); }
   .opts--3 { grid-template-columns: repeat(3, 1fr); }
 }
@@ -1298,8 +1379,6 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
   .cta-bar { display: none; }
   body.cta-visible .wa-fab { inset-block-end: calc(var(--sp-5) + env(safe-area-inset-bottom)); }
   .wa-fab { inset-block-end: var(--sp-5); inset-inline-end: var(--sp-5); }
-  .hero { padding-block: var(--sp-7) 64px; display: grid; grid-template-columns: 1.05fr .95fr; gap: var(--sp-7); align-items: center; }
-  .hero__media { margin-top: 0; grid-template-columns: 1fr .44fr; gap: var(--sp-3); max-width: none; }
   .opts { grid-template-columns: repeat(3, 1fr); }
   .opts--3 { grid-template-columns: repeat(4, 1fr); }
 }

@@ -67,7 +67,9 @@
 <header class="header">
   <div class="wrap header__inner">
     <a href="#top" class="logo" aria-label="حنين — الصفحة الرئيسية">
-      <img class="logo__img" data-logo="on-light" alt="حنين" width="776" height="271">
+      <!-- نسختان: الفاتحة فوق صورة الهيرو الداكنة، والداكنة بعد التمرير -->
+      <img class="logo__img logo__img--dark-bg" data-logo="on-dark" alt="حنين" width="776" height="271">
+      <img class="logo__img logo__img--light-bg" data-logo="on-light" alt="" aria-hidden="true" width="776" height="271">
       <span class="logo__tag" id="logo-tag"></span>
     </a>
     <a href="#order" class="btn btn--primary btn--sm header__cta">اطلب تصميمك</a>
@@ -77,21 +79,38 @@
 <main>
 
   <!-- ============ Hero ============ -->
-  <section class="wrap hero">
-    <span class="hero__beam" aria-hidden="true"></span>
-    <div>
-      <h1 class="hero__title" data-reveal="hero" id="hero-title"></h1>
-      <p class="hero__sub" data-reveal="hero" style="--d:80ms" id="hero-sub"></p>
-      <div class="hero__actions" data-reveal="hero" style="--d:160ms">
-        <a href="#order" class="btn btn--primary" id="hero-cta"></a>
-        <a href="#gallery" class="btn btn--secondary" id="hero-cta2"></a>
+  <!-- مشهد سينمائي بعرض الصفحة. قياس الصورة: النصف الأيسر داكن وهادئ
+       (سطوع 60) والأيمن نافذة مشمسة (سطوع 117) — فالنص الأبيض يجلس يسارًا
+       حيث التباين طبيعي، وتبقى الشمس والتفاصيل مشرقة يمينًا بلا تعتيم.
+       كل النصوص والأزرار HTML حقيقي فوق الصورة، ولا حرف داخل الصورة. -->
+  <section class="hero" id="hero">
+    <span class="hero__bgwrap" aria-hidden="true">
+      <img class="hero__bg" src="assets/img/hero.webp" alt=""
+           width="1536" height="1024" fetchpriority="high" decoding="async">
+    </span>
+    <span class="hero__scrim" aria-hidden="true"></span>
+
+    <div class="wrap hero__inner">
+      <div class="hero__copy">
+        <h1 class="hero__title" data-reveal="hero" id="hero-title"></h1>
+        <p class="hero__sub" data-reveal="hero" style="--d:80ms" id="hero-sub"></p>
+        <div class="hero__actions" data-reveal="hero" style="--d:160ms">
+          <a href="#order" class="btn btn--glass btn--glass-lead" id="hero-cta"></a>
+          <a href="#gallery" class="btn btn--glass" id="hero-cta2"></a>
+        </div>
+        <p class="hero__for" id="hero-for" data-reveal="soft" style="--d:260ms"></p>
+        <ul class="hero__trust" data-reveal="soft" style="--d:320ms" id="hero-trust"></ul>
       </div>
-      <p class="hero__for" id="hero-for" data-reveal="soft" style="--d:260ms"></p>
-      <ul class="hero__trust" data-reveal="soft" style="--d:320ms" id="hero-trust"></ul>
     </div>
-    <div class="hero__stage" data-reveal style="--d:200ms">
-      <div class="hero__media" id="hero-media"></div>
-    </div>
+
+    <!-- مؤشر النزول: جزء من المشهد، مطلق الموضع فلا يزيد ارتفاع الهيرو -->
+    <a class="hero__more" href="#products">
+      <span class="hero__more-row">
+        <span>تعرّفي على المزيد</span>
+        <svg class="hero__more-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <svg class="hero__more-wave" viewBox="0 0 64 8" aria-hidden="true"><path d="M1 4c5-4 11-4 16 0s11 4 16 0 11-4 16 0 11 4 14 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </a>
   </section>
 
   <!-- ============ حكاية حنين ============ -->

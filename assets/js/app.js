@@ -121,9 +121,10 @@
     renderHeroWorks();
   }
 
-  /* الأعمال في الهيرو: عمل رئيسي يتبدّل ببطء فوق رزمة أوراق، وعمل مصاحب ثابت.
-     الأعمال الثلاثة الأولى تتناوب، والرابع يبقى بجانبها — فلا يتكرّر عملان معًا. */
+  /* الهيرو صار مشهدًا مصوّرًا بعرض الصفحة، فلم تعد فيه رزمة أعمال.
+     تُترك الدالة لأن renderHero يناديها، وتخرج فورًا عند غياب الحاوية. */
   function renderHeroWorks() {
+    if (!$('#hero-media')) return;
     var g = on(CFG.gallery);
     if (!g.length) return;
 
@@ -1176,8 +1177,19 @@
       /* الزر العائم يغطّي شريط الإجمالي وزر الإرسال على الجوال */
       document.body.classList.toggle('in-order', inOrder);
     }
+    /* عمق خفيف جدًا لصورة الهيرو عند التمرير — إحساس بالعمق لا حركة ظاهرة.
+       يتوقف تمامًا عند تفضيل تقليل الحركة، ولا يعمل إلا والهيرو في الشاشة. */
+    var heroBg = $('.hero__bg');
+    var calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function parallax() {
+      if (!heroBg || calm.matches) return;
+      var y = window.scrollY;
+      if (y > window.innerHeight) return;
+      heroBg.style.transform = 'translate3d(0,' + (y * 0.06).toFixed(2) + 'px,0)';
+    }
     /* خانق زمني بدل requestAnimationFrame — يعمل حتى في التبويبات الخلفية */
     function onScroll() {
+      parallax();
       if (ticking) return;
       ticking = true;
       setTimeout(sync, 80);
