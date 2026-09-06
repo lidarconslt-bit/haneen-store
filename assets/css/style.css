@@ -201,105 +201,6 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* البطاقات القابلة للنقر عناصر <button> — ترث الطباعة واللون */
 button.card { font-size: inherit; color: inherit; line-height: inherit; }
 
-.grid { display: grid; gap: var(--sp-3); }
-.grid--2 { grid-template-columns: 1fr 1fr; }
-.grid--auto { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); }
-
-/* بطاقة منتج — قابلة للنقر: تختار المنتج وتنتقل للنموذج */
-.product {
-  text-align: right; position: relative; cursor: pointer;
-  font-family: inherit; width: 100%; display: flex; flex-direction: column;
-  background: var(--color-surface);
-}
-.product:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--color-primary); }
-.product:active { transform: translateY(-1px) scale(.99); }
-.product:hover .product__icon { background: var(--color-primary); color: #fff; }
-.product__icon { transition: background var(--dur-2) var(--ease), color var(--dur-2) var(--ease); }
-.product__foot {
-  margin-top: auto; padding-top: var(--sp-3); display: flex;
-  align-items: baseline; justify-content: space-between; gap: var(--sp-2);
-}
-.product__pick {
-  font-size: var(--fs-xs); font-weight: 600; color: var(--color-primary);
-  opacity: 0; transform: translateX(4px); transition: all var(--dur-2) var(--ease);
-}
-.product:hover .product__pick { opacity: 1; transform: none; }
-.product[disabled] { cursor: default; }
-.product[disabled]:hover { transform: none; box-shadow: none; border-color: var(--color-border); }
-.product[disabled]:hover .product__icon { background: var(--color-primary-light); color: var(--color-primary-dark); }
-.product__icon {
-  width: 42px; height: 42px; border-radius: var(--r-sm);
-  background: var(--color-primary-light); color: var(--color-primary-dark);
-  display: grid; place-items: center; margin-bottom: var(--sp-3);
-}
-.product__icon svg { width: 22px; height: 22px; }
-
-/* رأس البطاقة = نموذج حقيقي من المعرض، لا صورة عائمة فوقها.
-   الربط مأخوذ من gallery[].product — بلا أي أصل جديد. */
-.product { overflow: hidden; }
-.product__sample {
-  position: relative; display: block;
-  margin: calc(var(--sp-4) * -1) calc(var(--sp-4) * -1) var(--sp-3);
-  aspect-ratio: 4 / 3; max-height: 150px;
-  background: var(--color-bg-alt) center 38% / cover no-repeat;
-  border-bottom: 1px solid var(--color-border);
-}
-/* حافّة ورق مقصوصة تفصل النموذج عن النص */
-.product__sample::after {
-  content: ''; position: absolute; inset-inline: 0; bottom: -1px; height: 8px;
-  background: radial-gradient(circle at 8px 11px, rgba(0,0,0,0) 8px, var(--color-surface) 8.5px) repeat-x;
-  background-size: 16px 8px;
-}
-.product__from {
-  position: absolute; top: 7px; inset-inline-start: 7px; z-index: 2;
-  max-width: calc(100% - 14px);
-  background: rgba(255,255,255,.94); border: 1px solid var(--color-border);
-  border-radius: var(--r-sm);
-  padding: 3px 9px 4px;
-  box-shadow: 0 1px 3px rgba(34,43,38,.14);
-}
-/* سطران: «من أعمالنا» فوق العنوان، فيظهر العنوان كاملًا على الجوال */
-.product__from i {
-  display: block; font-style: normal;
-  font-size: 9.5px; line-height: 1.35; letter-spacing: .05em;
-  color: var(--color-text-muted);
-}
-.product__from b {
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-  overflow: hidden;
-  font-size: 11px; font-weight: 600; line-height: 1.4; color: var(--color-text);
-}
-/* مع وجود نموذج حقيقي، الأيقونة المجرّدة تكرار — الصورة تقول ما تقوله وأوضح */
-.product.has-sample .product__icon { display: none; }
-.product.has-sample .product__name { margin-top: 0; }
-.product__name { font-size: var(--fs-md); font-weight: 600; }
-.product__desc { font-size: var(--fs-sm); color: var(--color-text-muted); margin-top: var(--sp-1); line-height: 1.6; }
-/* سطر ثانوي يوضّح حجم المخرَج — أهدأ من الوصف ولا ينافس الاسم أو السعر */
-.product__spec {
-  font-size: var(--fs-xs); color: var(--color-text-muted); opacity: .78;
-  margin-top: var(--sp-1); line-height: 1.5;
-}
-.product.is-soon .product__spec { display: none; }
-.product__price { font-weight: 700; color: var(--color-primary-dark); font-size: var(--fs-lg);
-  /* «يبدأ من ٣٠ ريال» وحدة واحدة — لا تنكسر «من» إلى سطر مستقل */
-  white-space: nowrap; }
-.product__price small { font-weight: 400; color: var(--color-text-muted); font-size: var(--fs-xs); }
-/* «قريبًا» ليست منتجًا يُشترى — تُعرض كشريط إشارة لخارطة الطريق
-   بعرض الصف كاملًا، فلا تترك بطاقة يتيمة في آخر الشبكة */
-.product.is-soon {
-  grid-column: 1 / -1;
-  flex-direction: row; align-items: center; gap: var(--sp-3);
-  /* المحتوى متجمّع في الوسط بدل قطبين تفصلهما مساحة فارغة */
-  justify-content: center; flex-wrap: wrap;
-  background: transparent; border-style: dashed; box-shadow: none;
-}
-.product.is-soon .product__icon { margin-bottom: 0; flex: none; order: 1; }
-.product.is-soon .product__name { font-size: var(--fs-sm); order: 2; }
-.product.is-soon .product__desc { order: 3; margin-top: 0; font-size: var(--fs-xs); }
-.product.is-soon .product__badge { position: static; order: 4; margin-inline-start: 0; }
-/* السعر يبقى مخفيًا: المنتج غير متاح للطلب بعد */
-.product.is-soon .product__foot { display: none; }
-
 /* شارة */
 .badge {
   display: inline-block; font-size: var(--fs-xs); font-weight: 600;
@@ -307,7 +208,6 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
   background: var(--color-accent-light); color: var(--color-accent-ink);
 }
 .badge--soft { background: var(--color-primary-light); color: var(--color-primary-dark); }
-.product__badge { position: absolute; top: var(--sp-3); inset-inline-start: var(--sp-3); }
 
 /* ============ الهيدر ============ */
 .announce {
@@ -696,6 +596,13 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
   width: 100%; overflow: hidden;
   background: var(--color-board);
   margin-block: var(--sp-6) 0;
+}
+/* الهامش العلوي 32px وُضع يوم كان قبل المشهد قسم فاتح ذو حشو واسع.
+   بعد حذف ذلك القسم صار المشهد يلي شريط الثقة الأخضر مباشرة، فيُقرأ الهامش
+   شريطًا كريميًا تائهًا بين كتلتين مشبعتين — وعلى الجوال يزداد وضوحًا لضيق الشاشة.
+   السبب مشترك مع سطح المكتب، فيُعالَج الجوال وحده ويبقى سطح المكتب كما هو. */
+@media (max-width: 767px) {
+  .scene { margin-top: 0; }
 }
 .scene__media {
   position: relative;
@@ -1481,7 +1388,6 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
   .header__cta { padding-inline: 24px; }
   .logo__img { height: 34px; }
   .footer__logo { height: 40px; }
-  .grid--auto { grid-template-columns: repeat(3, 1fr); }
   .howsplit { grid-template-columns: repeat(3, 1fr); gap: var(--sp-5); }
   .idea__item { flex-direction: column; }
   .story__mark { height: 38px; }
@@ -1526,9 +1432,6 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
 
 @media (min-width: 1024px) {
   .styles { grid-template-columns: repeat(6, 1fr); }
-  /* أربعة أعمدة لا ستة: البطاقة صارت تحمل نموذجًا مصوّرًا،
-     فيتساوى عرضها مع بطاقات المعرض وينتظم الصفّان (٤ + ٣) */
-  .grid--auto { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* ============ أيقونة واتساب داخل الأزرار ============

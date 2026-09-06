@@ -64,7 +64,6 @@
     renderTrustbar();
     renderStory();
     renderIdea();
-    renderProducts();
     renderStyles();
     renderGallery();
     renderPlans();
@@ -173,50 +172,10 @@
   }
 
   /* أول عمل منشور من هذا النوع — الربط من المعرض نفسه، بلا حقل جديد في config */
-  function sampleOfProduct(productId) {
-    var list = on(CFG.gallery).filter(function (g) { return g.product === productId; });
-    return list.length ? list[0] : null;
-  }
-
   /* أول عمل نُفّذ بهذا الأسلوب */
   function sampleOfStyle(styleId) {
     var list = on(CFG.gallery).filter(function (g) { return g.style === styleId; });
     return list.length ? list[0] : null;
-  }
-
-  function renderProducts() {
-    $('#products-grid').innerHTML = on(CFG.products).map(function (p, i) {
-      var soon = !orderable(p);
-      var sm = soon ? null : sampleOfProduct(p.id);
-      return '<button type="button" class="card product' + (soon ? ' is-soon' : '') + (sm ? ' has-sample' : '') + '"' +
-        (soon ? ' disabled' : ' data-product="' + esc(p.id) + '"') +
-        ' data-reveal="card" style="--d:' + (i * 55) + 'ms">' +
-        (sm ? '<span class="product__sample" style="background-image:url(' + esc(sm.image) + ')">' +
-              '<span class="product__from"><i>من أعمالنا</i><b>' + esc(sm.title) + '</b></span></span>' : '') +
-        (p.badge ? '<span class="badge product__badge">' + esc(p.badge) + '</span>' : '') +
-        '<span class="product__icon">' + icon(p.icon) + '</span>' +
-        '<span class="product__name">' + esc(p.name) + '</span>' +
-        '<span class="product__desc">' + esc(p.desc) + '</span>' +
-        (p.spec ? '<span class="product__spec">' + esc(p.spec) + '</span>' : '') +
-        '<span class="product__foot">' +
-          '<span class="product__price"><small>يبدأ من</small> <span class="num">' + p.price + '</span> ريال</span>' +
-          (soon ? '' : '<span class="product__pick">اختيار ←</span>') +
-        '</span></button>';
-    }).join('');
-
-    $$('#products-grid [data-product]').forEach(function (b) {
-      b.addEventListener('click', function () { pickProductAndGo(b.dataset.product); });
-    });
-  }
-
-  function pickProductAndGo(productId) {
-    if (!orderableProduct(productId)) return;
-    var el = $('#opt-product input[value="' + productId + '"]');
-    if (el) { el.checked = true; state.product = productId; }
-    calcTotal();
-    saveDraft();
-    gotoStep(1);
-    goToOrder();
   }
 
   /* القسم مخفيّ أثناء التصفح، والعنصر المخفي بلا أبعاد: لا تصلح معه المرساة
