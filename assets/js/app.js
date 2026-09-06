@@ -219,9 +219,26 @@
     goToOrder();
   }
 
-  function goToOrder() {
+  /* القسم مخفيّ أثناء التصفح، والعنصر المخفي بلا أبعاد: لا تصلح معه المرساة
+     ولا يُحسب هدف التمرير. لذلك يُرفع الإخفاء أولًا، ثم تُجبَر إعادة التخطيط
+     بقراءة offsetHeight فيصير قابلًا للقياس، ثم يُمرَّر إليه. */
+  function revealOrder() {
     var el = $('#order');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!el) return null;
+    if (el.hasAttribute('hidden')) {
+      el.removeAttribute('hidden');
+      void el.offsetHeight;   /* إعادة تخطيط فورية قبل حساب هدف التمرير */
+      revealScan();           /* عناصره تدخل مراقبة الظهور بعد أن صار لها تخطيط */
+    }
+    return el;
+  }
+
+  /* scrollIntoView لا يخضع لـ scroll-behavior في CSS، فتفضيل تقليل الحركة يُقرأ صراحةً */
+  function goToOrder() {
+    var el = revealOrder();
+    if (!el) return;
+    var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
   }
 
   function renderStyles() {
@@ -1135,7 +1152,7 @@
     showOrderForm(true);
     calcTotal();
     gotoStep(1);
-    $('#order').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    goToOrder();   /* يبقى ظاهرًا، ويحترم تقليل الحركة كبقية المداخل */
   }
 
   /* ---------- حالة المتجر والسعة ---------- */
@@ -1223,8 +1240,17 @@
       var t = e.target;
       if (!t || !t.closest) return;
       if (!t.closest('a[href="#order"]')) return;
+      /* المرساة وحدها لم تعد تكفي بعد أن صار القسم مخفيًا، والتمرير يتولّاه
+         goToOrder بعد الكشف — فيُمنع السلوك الافتراضي حتى لا تُسجَّل قفزة
+         إلى عنصر بلا أبعاد ولا يُترك #order في شريط العنوان بلا هدف. */
+      e.preventDefault();
       gotoStep(1);
+      goToOrder();
     });
+
+    /* رابط مباشر أو إعادة تحميل والمرساة في العنوان: المتصفح لا يستطيع القفز
+       إلى قسم مخفيّ، فنكشفه ونمرّر إليه بأنفسنا. */
+    if (location.hash === '#order') goToOrder();
   }
 
   /* ---------- شريط الإجراء ---------- */

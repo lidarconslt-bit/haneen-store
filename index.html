@@ -30,7 +30,7 @@
 <!-- الخط مستضاف ذاتيًا: XB Shafigh بوزنيه الحقيقيين — لا اعتماد على خطوط خارجية -->
 <link rel="preload" href="assets/fonts/XBShafigh-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/XBShafigh-Bold.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=39">
+<link rel="stylesheet" href="assets/css/style.css?v=40">
 </head>
 <body id="top">
 
@@ -232,8 +232,10 @@
   </section>
 
   <!-- ============ نموذج الطلب ============ -->
-  <!-- النموذج: أرضية القسم كريمية، والنموذج نفسه ورقة بيضاء واحدة فوقها -->
-  <section class="section" id="order">
+  <!-- النموذج: أرضية القسم كريمية، والنموذج نفسه ورقة بيضاء واحدة فوقها.
+       يبدأ مخفيًا فلا يراه الزائر ككتلة أثناء التصفح — يكشفه أول CTA يؤدي للطلب.
+       الموقع كله يُبنى من config.json عبر app.js، فلا حالة «بلا JS» تفقد النموذج. -->
+  <section class="section" id="order" hidden>
     <div class="wrap order">
       <div class="section__head" style="text-align:center;margin-inline:auto" data-reveal>
         <span class="eyebrow">نموذج الطلب</span>
@@ -529,6 +531,6 @@
   <a href="#order" class="btn btn--primary btn--block">اطلب تصميمك</a>
 </div>
 
-<script src="assets/js/app.js?v=39"></script>
+<script src="assets/js/app.js?v=40"></script>
 </body>
 </html>
