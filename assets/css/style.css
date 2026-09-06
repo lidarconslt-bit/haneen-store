@@ -892,7 +892,39 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .delivery__list svg { width: 18px; height: 18px; color: var(--color-primary); flex: none; margin-top: 4px; }
 
 /* ============ النموذج ============ */
-.order { max-width: 620px; margin-inline: auto; }
+/* القسم أرضية كريمية نظيفة، والنموذج ورقة بيضاء واحدة فوقها.
+   الحشو الأفقي انتقل إلى القسم نفسه حتى تبقى الطاولة ظاهرة حول حواف الورقة على الجوال.
+   scroll-margin-top يحمي رأس القسم من الهيدر اللاصق في المسارين معًا:
+   مرساة #order واستدعاء scrollIntoView من بطاقات المنتجات. */
+#order {
+  padding-inline: var(--sp-4);
+  scroll-margin-top: calc(var(--header-h) + var(--sp-3));
+}
+.order {
+  width: 100%; max-width: 620px; margin-inline: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5) var(--sp-4);
+  /* ظلّ مُلقى ناعم جدًا — ورقة على طاولة، لا بطاقة طافية */
+  box-shadow: 0 1px 2px rgba(34, 43, 38, .05), 0 18px 40px -24px rgba(34, 43, 38, .30);
+}
+
+/* داخل الورقة لا يصلح الأبيض على الأبيض: خانات التعبئة تأخذ لون الطاولة
+   فتُقرأ كمواضع حفرت في الورقة — وحالات الاختيار الخضراء تبقى كما هي. */
+#order input[type="text"], #order input[type="tel"], #order select, #order textarea,
+#order .opt span, #order .addon, #order .summary, #order .total {
+  background: var(--color-bg);
+}
+/* خيار الأسلوب يحمل عملًا حقيقيًا، والفرق بين المختار وغيره في شريط الاسم الأخضر */
+#order .opt--visual input:checked + span { background: var(--color-bg); }
+/* ورقة المقاس ورقة — تبقى بيضاء فوق الخانة الكريمية */
+#order .opt__paper { background: var(--color-surface); }
+#order .opt__paper--free { background: transparent; }
+@media (min-width: 768px) {
+  #order { padding-inline: var(--sp-5); }
+  .order { padding: var(--sp-6); }
+}
 .progress { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-5); }
 .progress__item { flex: 1; font-size: var(--fs-xs); color: var(--color-text-muted); text-align: center; }
 .progress__bar { height: 4px; border-radius: var(--r-pill); background: var(--color-border); margin-bottom: 6px; transition: background var(--dur) var(--ease); }

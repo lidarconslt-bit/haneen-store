@@ -79,6 +79,7 @@
     initLightbox();
     initReveal();
     initCtaBar();
+    initOrderLinks();
     initServiceWorker();
     restoreDraft();
     document.title = CFG.store.name + ' — ' + CFG.store.tagline;
@@ -1149,6 +1150,20 @@
   function revealScan() {
     if (!io) { $$('[data-reveal]:not(.is-in)').forEach(function (e) { e.classList.add('is-in'); }); return; }
     $$('[data-reveal]:not(.is-in)').forEach(function (el) { io.observe(el); });
+  }
+
+  /* ---------- مداخل الطلب ---------- */
+  /* كل زر يؤدي إلى الطلب يُعيد النموذج إلى خطوته الأولى قبل وصول الزائر إليه،
+     فلا يهبط في منتصف نموذج بدأه في جلسة سابقة. الانتقال نفسه يُترك للمتصفح:
+     مرساة #order مع scroll-behavior في CSS — فيُحترم تفضيل تقليل الحركة تلقائيًا.
+     والإنصات مفوّض على المستند لأن شريط الإجراء وأزرارًا أخرى تُبنى أو تتبدّل بعد التهيئة. */
+  function initOrderLinks() {
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      if (!t.closest('a[href="#order"]')) return;
+      gotoStep(1);
+    });
   }
 
   /* ---------- شريط الإجراء ---------- */
