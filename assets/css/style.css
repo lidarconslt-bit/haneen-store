@@ -517,37 +517,173 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .idea__item h3 { font-size: var(--fs-md); }
 .idea__item p { font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.6; }
 
-/* ============ الأساليب + المعرض ============ */
-.filters { display: flex; align-items: center; gap: var(--sp-2); overflow-x: auto; padding-bottom: var(--sp-2); margin-bottom: var(--sp-4); scrollbar-width: none; }
+/* ============ المعرض ============
+   أعمال حنين أوراق مطبوعة معروضة على سطح كريمي — لا بطاقات متجر.
+   وكل عمل لوحة كاملة بهوامشها وترويستها وشريطها السفلي، فلا يُقصّ أبدًا:
+   نسبة 3:4 هي نسبة الأصل نفسها، وobject-fit: contain يضمن بقاء التصميم
+   كاملًا مقروءًا مهما تغيّر العرض.
+   ================================================================== */
+#gallery { --paper: 0 1px 1px rgba(34, 43, 38, .05), 0 16px 34px -18px rgba(34, 43, 38, .32); }
+
+/* ---- الفلاتر: أسماء على خط تحريري، لا أزرار ممتلئة ---- */
+.filters {
+  display: flex; align-items: flex-end; gap: var(--sp-5);
+  overflow-x: auto; scrollbar-width: none;
+  margin-bottom: var(--sp-7);
+  border-bottom: 1px solid var(--color-border);
+}
 .filters::-webkit-scrollbar { display: none; }
+/* على الشاشات الضيّقة تُقصّ آخر شريحة عند الحافة فتبدو خطأً بصريًا. قناع تلاشٍ
+   خفيف يجعل القصّ مقصودًا ويشير إلى وجود مزيد — ومنطق التمرير نفسه بلا تغيير.
+   التدرّج فيزيائي (to right) لأن المحتوى RTL يفيض نحو اليسار، وحشوة طرفية
+   تُبعد آخر شريحة عن التلاشي عند بلوغ نهاية التمرير. */
+@media (max-width: 767px) {
+  .filters {
+    padding-inline-end: 10px;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 26px);
+    mask-image: linear-gradient(to right, transparent 0, #000 26px);
+  }
+}
 .chip {
   flex: none; font-family: inherit; font-size: var(--fs-sm); font-weight: 500;
-  padding: 0 18px; min-height: 44px; border-radius: var(--r-pill); cursor: pointer;
-  background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-muted);
-  transition: all var(--dur) var(--ease);
+  background: none; border: 0; border-radius: 0; cursor: pointer;
+  color: var(--color-text-muted);
+  min-height: 44px; padding: 0 0 var(--sp-3);
+  display: flex; align-items: flex-end; gap: 5px;
+  box-shadow: inset 0 -2px 0 transparent;
+  transition: color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
-.chip:hover { border-color: var(--color-primary); color: var(--color-primary-dark); }
-.chip.is-active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
-.chip:active { transform: scale(.96); }
-/* عدد الأعمال داخل كل شريحة — محسوب من البيانات */
+.chip:hover { color: var(--color-text); }
+/* الذهبي هو الضوء — يقع على الشريحة المختارة وحدها */
+.chip.is-active {
+  color: var(--color-text); font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--color-accent);
+}
 .chip em {
-  font-style: normal; font-size: var(--fs-xs); font-weight: 500;
-  color: var(--color-text-muted); margin-inline-start: 6px;
-  font-variant-numeric: tabular-nums;
+  font-style: normal; font-size: 11px; font-weight: 500;
+  color: var(--color-text-muted); font-variant-numeric: tabular-nums;
 }
-.chip.is-active em { color: rgba(255,255,255,.72); }
+.chip.is-active em { color: var(--color-accent-ink); }
 
-.gallery {
-  display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3);
-  /* صفوف متساوية الارتفاع — العناوين مختلفة الطول لا تُربك انتظام الشبكة */
-  grid-auto-rows: 1fr;
+/* ---- الورقة: العنصر الوحيد المتكرّر في القسم ---- */
+.feature__sheet, .work__open {
+  display: block; width: 100%; margin: 0; padding: 0;
+  border: 0; background: none; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.work {
-  padding: 0; overflow: hidden; display: flex; flex-direction: column;
-  cursor: pointer; font-family: inherit; text-align: right; width: 100%;
-  background: var(--color-surface);
+.feature__sheet img, .work__open img {
+  width: 100%; height: auto; aspect-ratio: 3 / 4;
+  object-fit: contain; background: var(--color-surface);
+  border: 1px solid rgba(227, 218, 203, .8);
+  box-shadow: var(--paper);
+  transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
 }
-.work:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--color-primary-light); }
+/* إيماءة واحدة لا أكثر: الورقة تُرفع ويثقُل ظلّها — ولا تكبير للصورة،
+   لأن تكبير عمل تعليمي يقصّ حوافّه ويناقض وضوحه. */
+@media (hover: hover) and (pointer: fine) {
+  .feature__sheet:hover img, .feature__sheet:focus-visible img,
+  .work__open:hover img, .work__open:focus-visible img {
+    transform: translateY(-5px);
+    box-shadow: 0 2px 3px rgba(34, 43, 38, .06), 0 26px 46px -20px rgba(34, 43, 38, .42);
+  }
+}
+
+/* ---- العمل المختار ---- */
+/* على الجوال المختار وبقية الأعمال أوراق في عمود واحد، فيتساوى الفاصل بعده
+   مع الفاصل بين الأعمال (56px): المختار يتميّز بعموده التحريري لا بفراغ زائد.
+   وعلى الأوسع يعود الفاصل أكبر لأنه يصير كتلة بعمودين تحتاج فصلًا واضحًا. */
+.feature { display: grid; gap: var(--sp-5); margin-bottom: 56px; }
+.feature__text { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.feature__no {
+  display: flex; align-items: center; gap: 7px;
+  font-size: var(--fs-xs); font-weight: 600; letter-spacing: .06em;
+  color: var(--color-text-muted); font-variant-numeric: tabular-nums;
+}
+.feature__no .num:first-child { color: var(--color-accent-ink); }
+.feature__no i { font-style: normal; opacity: .45; }
+.feature__label {
+  margin-top: var(--sp-3); padding-bottom: 7px;
+  font-size: var(--fs-xs); font-weight: 700; color: var(--color-primary-dark);
+  border-bottom: 1px solid var(--color-accent-light);
+}
+.feature__title {
+  margin-top: var(--sp-4); font-size: var(--fs-2xl); font-weight: 700;
+  color: var(--color-secondary); line-height: 1.3; text-wrap: balance;
+}
+.feature__spec { margin: var(--sp-5) 0 0; width: 100%; max-width: 23rem; display: grid; }
+.feature__spec > div {
+  display: flex; justify-content: space-between; gap: var(--sp-4);
+  padding: 10px 0; border-bottom: 1px dashed var(--color-border); font-size: var(--fs-sm);
+}
+.feature__spec dt { color: var(--color-text-muted); }
+.feature__spec dd { margin: 0; font-weight: 600; text-align: end; }
+.feature__price {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px;
+  margin-top: var(--sp-5);
+  font-family: var(--font-display); font-size: 30px; font-weight: 700;
+  color: var(--color-primary-dark); line-height: 1;
+}
+/* سطر مستقل تحت الرقم — لا يزاحم حجمه الكبير */
+.feature__price small {
+  flex: 1 0 100%; margin-top: 6px;
+  font-family: var(--font); font-size: var(--fs-xs); font-weight: 400;
+  color: var(--color-text-muted); line-height: 1.5;
+}
+.feature__cta {
+  margin-top: var(--sp-4); font-family: inherit; font-size: var(--fs-md); font-weight: 600;
+  background: none; border: 0; border-bottom: 1px solid var(--color-primary);
+  color: var(--color-primary-dark); cursor: pointer;
+  padding: 14px 2px 8px; display: flex; align-items: center; gap: 8px;
+  transition: gap var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.feature__cta:hover { gap: 15px; border-bottom-color: var(--color-primary-dark); }
+
+/* ---- بقية الأعمال ---- */
+.gallery { display: grid; grid-template-columns: 1fr; gap: 56px; }
+.gallery__empty { color: var(--color-text-muted); }
+.work { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.work__cap { display: grid; gap: 3px; }
+/* صنف num يفرض direction: ltr، فلولا justify-self لالتصق الرقم باليسار
+   بينما العنوان تحته يبدأ من اليمين */
+.work__no {
+  justify-self: start;
+  font-size: 11px; font-weight: 600; letter-spacing: .08em;
+  color: var(--color-text-muted); font-variant-numeric: tabular-nums;
+}
+.work__title { font-size: var(--fs-md); font-weight: 600; line-height: 1.45; }
+.work__meta {
+  font-size: var(--fs-xs); color: var(--color-text-muted);
+  display: flex; flex-wrap: wrap; gap: 3px 7px;
+}
+.work__order {
+  justify-self: start; margin-top: 5px;
+  font-family: inherit; font-size: var(--fs-xs); font-weight: 600;
+  background: none; border: 0; padding: 8px 2px; cursor: pointer;
+  color: var(--color-primary); display: flex; align-items: center; gap: 6px;
+  transition: gap var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.work__order:hover { color: var(--color-primary-dark); gap: 12px; }
+/* على أجهزة المؤشر يظهر زر الطلب عند المرور أو التركيز وحدهما،
+   وعلى اللمس يبقى ظاهرًا دائمًا لأنه لا مرور هناك. */
+@media (hover: hover) and (pointer: fine) {
+  .work__order {
+    opacity: 0;
+    transition: opacity var(--dur-2) var(--ease), gap var(--dur) var(--ease),
+                color var(--dur) var(--ease);
+  }
+  .work:hover .work__order, .work:focus-within .work__order { opacity: 1; }
+}
+
+@media (min-width: 900px) {
+  .feature {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 64px; align-items: center; margin-bottom: 96px;
+  }
+  .feature__title { font-size: clamp(1.75rem, 2.6vw, 2.25rem); }
+  .gallery { grid-template-columns: 1fr 1fr; column-gap: 56px; row-gap: 80px; }
+  /* إزاحة رأسية للعمود الثاني — إيقاع تحريري بلا تفاوت مقاسات يكسر الشبكة */
+  .gallery .work:nth-child(even) { margin-top: 88px; }
+}
 
 /* ============ مشهد: لقطة من تجربة التعلّم ============ */
 /* مشهد فوتوغرافي بعرض الصفحة، لا بطاقة: بلا سطح أبيض ولا إطار ولا نسبة 4:5.
@@ -623,63 +759,39 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
   .scene:hover .scene__link span { transform: translateX(-4px); }
 }
 
-/* لمحة أولى ثم عرض الكل — صفّان كاملان في الحالتين:
-   أربعة أعمال على الجوال (عمودان)، وستة على الأوسع (ثلاثة أعمدة). */
-.gallery.is-collapsed .work:nth-child(n+5) { display: none; }
+/* لمحة أولى ثم عرض الكل — ثلاثة أعمال على العمود الواحد وأربعة على العمودين،
+   والعمل المختار خارج هذا العدد لأنه ظاهر دائمًا. */
+.gallery.is-collapsed .work:nth-child(n+4) { display: none; }
+@media (min-width: 900px) {
+  .gallery.is-collapsed .work:nth-child(4) { display: flex; }
+  .gallery.is-collapsed .work:nth-child(n+5) { display: none; }
+}
 
+/* خط شعري يفصل المعروض عمّا بقي، والعبارة تحته في الوسط */
 .more {
-  display: flex; align-items: center; gap: 8px; width: fit-content;
-  margin-block-start: var(--sp-4); margin-inline-start: auto;
-  padding: 10px 2px; background: none; border: 0;
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-primary); cursor: pointer;
-  font: 600 var(--fs-sm) / 1 var(--font);
-}
-.more:hover { border-bottom-color: var(--color-primary); }
-.more svg { width: 15px; height: 15px; transition: transform 260ms var(--ease-out); }
-.more.is-open svg { transform: rotate(45deg); }
-.work:active { transform: translateY(-1px) scale(.99); }
-.work__img { aspect-ratio: 3/4; overflow: hidden; background: var(--color-bg-alt); position: relative; }
-.work__img img { width: 100%; height: 100%; object-fit: cover; transition: transform 520ms var(--ease-out); }
-.work:hover .work__img img { transform: scale(1.045); }
-
-/* طبقة «عرض العمل» تظهر عند التفاعل */
-.work__veil {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  background: linear-gradient(to top, rgba(34,43,38,.55), rgba(34,43,38,0) 55%);
-  opacity: 0; transition: opacity var(--dur-2) var(--ease);
-}
-.work:hover .work__veil, .work:focus-visible .work__veil { opacity: 1; }
-.work__zoom {
-  display: flex; align-items: center; gap: 6px;
-  background: rgba(255,255,255,.94); color: var(--color-primary-dark);
-  font-size: var(--fs-xs); font-weight: 600; padding: 7px 14px; border-radius: var(--r-pill);
-  transform: translateY(6px); transition: transform var(--dur-2) var(--ease-out);
-}
-.work:hover .work__zoom { transform: none; }
-.work__zoom svg { width: 15px; height: 15px; }
-
-.work__body { padding: var(--sp-3); display: flex; flex-direction: column; gap: 5px; flex: 1; }
-.work__title { font-size: var(--fs-sm); font-weight: 600; line-height: 1.45; }
-.work__meta { font-size: var(--fs-xs); color: var(--color-text-muted); display: flex; flex-wrap: wrap; gap: 4px 7px; }
-/* مدخل الطلب — يحوّل المعرض من ألبوم إلى فهرس */
-.work__go {
-  margin-top: auto; padding-top: var(--sp-2);
-  font-size: var(--fs-xs); font-weight: 600; color: var(--color-primary);
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  width: 100%; margin-top: 72px; padding: var(--sp-4) 0 0;
+  background: none; border: 0; border-top: 1px solid var(--color-border);
+  color: var(--color-primary-dark); cursor: pointer;
+  font: 600 var(--fs-sm) / 1 var(--font); min-height: 44px;
   transition: color var(--dur) var(--ease);
 }
-.work:hover .work__go, .work:focus-visible .work__go { color: var(--color-primary-dark); }
+.more:hover { color: var(--color-primary); }
+.more svg { width: 14px; height: 14px; transition: transform 260ms var(--ease-out); }
+.more.is-open svg { transform: rotate(45deg); }
 
 /* ============ صندوق عرض العمل ============ */
 .lightbox { max-width: 880px; width: calc(100% - 24px); }
 .lightbox { max-height: 92vh; }
 .lightbox .modal__body { padding: 0; max-height: calc(92vh - 62px); overflow-y: auto; }
+/* خلفية داكنة: العمل يُقرأ ورقة مطبوعة تحت إضاءة معرض، لا صورة على ورق */
 .lb__stage {
-  background: var(--color-bg-alt); display: grid; place-items: center;
-  padding: var(--sp-4); position: relative;
+  background: var(--color-board); display: grid; place-items: center;
+  padding: var(--sp-5) var(--sp-4); position: relative;
 }
 /* contain يضمن ظهور العمل كاملًا بلا قص ولا تشويه */
-.lb__stage img { max-height: 58vh; width: auto; object-fit: contain; border-radius: var(--r-sm); }
+.lb__stage img { max-height: 58vh; width: auto; object-fit: contain;
+  box-shadow: 0 22px 52px -26px rgba(0, 0, 0, .75); }
 .lb__nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--color-border);
@@ -1356,10 +1468,7 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
 
 /* ============ الاستجابة ============ */
 @media (min-width: 560px) {
-  .gallery, .styles { grid-template-columns: repeat(3, 1fr); }
-  .gallery.is-collapsed .work:nth-child(5),
-  .gallery.is-collapsed .work:nth-child(6) { display: flex; }
-  .gallery.is-collapsed .work:nth-child(n+7) { display: none; }
+  .styles { grid-template-columns: repeat(3, 1fr); }
   .trustbar ul { grid-template-columns: repeat(4, 1fr); }
   .opts--3 { grid-template-columns: repeat(3, 1fr); }
 }
@@ -1416,7 +1525,6 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
 }
 
 @media (min-width: 1024px) {
-  .gallery { grid-template-columns: repeat(4, 1fr); }
   .styles { grid-template-columns: repeat(6, 1fr); }
   /* أربعة أعمدة لا ستة: البطاقة صارت تحمل نموذجًا مصوّرًا،
      فيتساوى عرضها مع بطاقات المعرض وينتظم الصفّان (٤ + ٣) */

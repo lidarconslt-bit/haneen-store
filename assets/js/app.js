@@ -272,23 +272,25 @@
         if (galleryOpen) {
           revealScan();
           /* التركيز على أول عمل ظهر، بلا قفزة تمرير */
-          var next = $$('#gallery-grid .work')[galleryLimit()];
+          var next = $$('#gallery-grid .work__open')[galleryLimit()];
           if (next) next.focus({ preventScroll: true });
         } else {
           $('#gallery').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
       /* تبديل عدد الأعمال المعروضة عند تغيّر عرض الشاشة */
-      var mq = window.matchMedia('(min-width: 560px)');
+      var mq = window.matchMedia('(min-width: 900px)');
       (mq.addEventListener ? mq.addEventListener.bind(mq, 'change')
                            : mq.addListener.bind(mq))(applyGalleryCollapse);
     }
   }
 
-  /* أربعة أعمال على الجوال وستة على الأوسع — صفّان كاملان في الحالتين */
+  /* العدد يخصّ الشبكة وحدها — العمل المختار خارجها وظاهر دائمًا:
+     عمودان على الأوسع فصفّان = أربعة، وعمود واحد على الجوال فثلاثة. */
   function galleryLimit() {
-    return window.matchMedia('(min-width: 560px)').matches ? 6 : 4;
+    return window.matchMedia('(min-width: 900px)').matches ? 4 : 3;
   }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
 
   /* الأعمال الزائدة تبقى في الصفحة ويُخفيها CSS فقط،
      فيظل فهرس صندوق العرض والتنقّل بين الأعمال سليمًا. */
@@ -309,39 +311,98 @@
     grid.classList.toggle('is-collapsed', !galleryOpen);
     btn.classList.toggle('is-open', galleryOpen);
     btn.setAttribute('aria-expanded', galleryOpen ? 'true' : 'false');
-    btn.innerHTML = (galleryOpen ? 'عرض أقل' : 'عرض كل الأعمال (' + total + ')') + icon('plus');
+    /* العدد المعروض يشمل العمل المختار، لا الشبكة وحدها */
+    btn.innerHTML = (galleryOpen ? 'عرض أقل' : 'عرض كل الأعمال (' + shown.length + ')') + icon('plus');
+  }
+
+  /* العمل المختار: أول أعمال التصفية الحالية، معروضًا لا مُعبّأً في بطاقة.
+     معلوماته تحريرية حول الصورة لا تحتها، وله زر طلب حقيقي مستقل عن فتح الصورة. */
+  function featureHTML(g, total) {
+    var st = byId(on(CFG.styles), g.style), pr = byId(CFG.products || [], g.product);
+    var rows = [['نوع التصميم', pr ? pr.name : ''],
+                ['الأسلوب', st ? st.name : ''],
+                ['الفئة العمرية', g.age]]
+      .filter(function (r) { return r[1]; })
+      .map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; })
+      .join('');
+
+    var price = (pr && orderable(pr))
+      ? '<p class="feature__price"><span class="num">' + ar(pr.price) + '</span> ريال' +
+        '<small>سعر هذا النوع</small></p>'
+      : '';
+
+    return '<article class="feature" data-reveal>' +
+      '<button type="button" class="feature__sheet" data-open="0"' +
+        ' aria-label="عرض العمل كاملاً: ' + esc(g.title) + '">' +
+        '<img src="' + esc(g.image) + '" alt="' + esc(g.title) + '"' +
+        ' width="1200" height="1600" decoding="async">' +
+      '</button>' +
+      '<div class="feature__text">' +
+        '<p class="feature__no"><span class="num">' + pad(1) + '</span>' +
+          '<i aria-hidden="true">⁄</i><span class="num">' + pad(total) + '</span></p>' +
+        '<span class="feature__label">عمل مختار</span>' +
+        '<h3 class="feature__title">' + esc(g.title) + '</h3>' +
+        '<dl class="feature__spec">' + rows + '</dl>' +
+        price +
+        '<button type="button" class="feature__cta" data-order="0">اطلب مثله' +
+          '<span aria-hidden="true">←</span></button>' +
+      '</div></article>';
   }
 
   function drawWorks(filter) {
-    var styles = on(CFG.styles), products = CFG.products || [];
     var items = on(CFG.gallery).filter(function (g) { return filter === 'all' || g.style === filter; });
+    var feat = $('#gallery-feature'), grid = $('#gallery-grid');
+
     if (!items.length) {
-      $('#gallery-grid').innerHTML = '<p style="color:var(--color-text-muted);grid-column:1/-1">لا توجد نماذج بهذا الأسلوب بعد.</p>';
+      feat.innerHTML = '';
+      grid.innerHTML = '<p class="gallery__empty">لا توجد نماذج بهذا الأسلوب بعد.</p>';
+      shown = items;
+      applyGalleryCollapse();
       return;
     }
     shown = items;
-    $('#gallery-grid').innerHTML = items.map(function (g, i) {
-      return '<button type="button" class="card work" data-i="' + i + '"' +
-        ' data-reveal="card" style="--d:' + (Math.min(i, 7) * 50) + 'ms"' +
-        ' aria-label="عرض العمل: ' + esc(g.title) + '">' +
-        '<span class="work__img">' +
-          '<img src="' + esc(g.image) + '" alt="' + esc(g.title) + '" loading="lazy" width="300" height="400">' +
-          '<span class="work__veil"><span class="work__zoom">' + icon('zoom') + 'عرض العمل</span></span>' +
-        '</span>' +
-        '<span class="work__body">' +
-          '<span class="work__title">' + esc(g.title) + '</span>' +
-          '<span class="work__meta">' + metaOf(g) + '</span>' +
-          '<span class="work__go">اطلب مثله ←</span>' +
-        '</span></button>';
+
+    feat.innerHTML = featureHTML(items[0], items.length);
+
+    /* بقية الأعمال: أوراق على السطح نفسه — الورقة تفتح العمل،
+       والتعليق تحتها يحمل زر الطلب مستقلاً، فلا يعد النص زرًا وهميًا. */
+    grid.innerHTML = items.slice(1).map(function (g, k) {
+      var i = k + 1;
+      return '<div class="work" data-reveal="card" style="--d:' + (Math.min(k, 3) * 60) + 'ms">' +
+        '<button type="button" class="work__open" data-open="' + i + '"' +
+          ' aria-label="عرض العمل كاملاً: ' + esc(g.title) + '">' +
+          '<img src="' + esc(g.image) + '" alt="' + esc(g.title) + '" loading="lazy"' +
+          ' width="1200" height="1600" decoding="async">' +
+        '</button>' +
+        '<div class="work__cap">' +
+          '<span class="work__no num">' + pad(i + 1) + '</span>' +
+          '<h3 class="work__title">' + esc(g.title) + '</h3>' +
+          '<p class="work__meta">' + metaOf(g) + '</p>' +
+          '<button type="button" class="work__order" data-order="' + i + '">اطلب مثله' +
+            '<span aria-hidden="true">←</span></button>' +
+        '</div></div>';
     }).join('');
 
-    $$('#gallery-grid .work').forEach(function (b) {
-      b.addEventListener('click', function () { openLightbox(+b.dataset.i); });
-    });
+    bindWorkActions(feat);
+    bindWorkActions(grid);
 
     galleryOpen = false;          /* الفلتر الجديد يعود إلى الحالة المختصرة */
     applyGalleryCollapse();
     revealScan();
+  }
+
+  /* فعلان لا يختلطان: data-open يفتح العمل، وdata-order يذهب به إلى النموذج */
+  function bindWorkActions(root) {
+    if (!root) return;
+    $$('[data-open]', root).forEach(function (b) {
+      b.addEventListener('click', function () { openLightbox(+b.dataset.open); });
+    });
+    $$('[data-order]', root).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var g = shown[+b.dataset.order];
+        if (g) pickStyleAndGo(g.style, g.product);
+      });
+    });
   }
 
   function metaOf(g) {
