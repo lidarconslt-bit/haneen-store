@@ -31,7 +31,7 @@
 <!-- الخط مستضاف ذاتيًا: XB Shafigh بوزنيه الحقيقيين — لا اعتماد على خطوط خارجية -->
 <link rel="preload" href="assets/fonts/XBShafigh-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/XBShafigh-Bold.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=49">
+<link rel="stylesheet" href="assets/css/style.css?v=50">
 </head>
 <body id="top">
 
@@ -244,10 +244,26 @@
 
         <!-- الخطوة 1 -->
         <div class="fstep is-active" data-step="1">
-          <div class="field">
+          <!-- نوع الطلب: بطاقة السعر تحدده مسبقًا، ويمكن تغييره هنا -->
+          <div class="field" id="field-pkg">
+            <span class="field__label">نوع الطلب <span class="req">*</span></span>
+            <div class="opts" id="opt-pkg"></div>
+          </div>
+          <div class="field" id="field-product">
             <span class="field__label">نوع التصميم <span class="req">*</span></span>
             <div class="opts" id="opt-product"></div>
             <p class="error-msg"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alert"/></svg>اختر نوع التصميم</p>
+          </div>
+          <div class="field" id="field-contents" hidden>
+            <span class="field__label">محتوى الباقة</span>
+            <p class="field__hint" id="pkg-contents"></p>
+          </div>
+          <div class="field" id="field-designs" hidden>
+            <span class="field__label">أنواع التصاميم الخمسة <span class="req">*</span>
+              <span class="field__hint">يمكن أن تختلف الأنواع.</span>
+            </span>
+            <div class="designs" id="opt-designs"></div>
+            <p class="error-msg"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alert"/></svg>اختر نوع كل تصميم من التصاميم الخمسة</p>
           </div>
           <div class="field">
             <span class="field__label">الأسلوب <span class="req">*</span>
@@ -293,10 +309,10 @@
 
         <!-- الخطوة 2 -->
         <div class="fstep" data-step="2">
-          <div class="field">
-            <label for="f-topic">موضوع التصميم <span class="req">*</span></label>
+          <div class="field" id="field-topic">
+            <label for="f-topic"><span id="topic-label-text">موضوع التصميم</span> <span class="req">*</span></label>
             <input type="text" id="f-topic" name="topic" placeholder="مثال: أركان الإسلام، أو دورة حياة الفراشة" maxlength="120">
-            <p class="error-msg"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alert"/></svg>اكتب موضوع التصميم</p>
+            <p class="error-msg"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alert"/></svg><span id="topic-error-text">اكتب موضوع التصميم</span></p>
           </div>
           <div class="field">
             <label for="f-subject">المجال
@@ -305,8 +321,8 @@
             <select id="f-subject" name="subject"></select>
             </div>
           <div class="field">
-            <label for="f-content">المحتوى
-              <span class="field__hint">يمكن لصق المحتوى هنا، أو كتابة «سأرسله عبر واتساب» وإرساله لاحقًا مع رقم الطلب.</span>
+            <label for="f-content"><span id="content-label-text">المحتوى</span>
+              <span class="field__hint" id="content-hint">يمكن لصق المحتوى هنا، أو كتابة «سأرسله عبر واتساب» وإرساله لاحقًا مع رقم الطلب.</span>
             </label>
             <textarea id="f-content" name="content" placeholder="النقاط أو النص المطلوب ظهوره في التصميم…" maxlength="4000" aria-describedby="content-count"></textarea>
             <!-- حدّ تجاري 100 كلمة — منفصل عن حدّ طول رابط واتساب التقني في app.js -->
@@ -314,7 +330,7 @@
               <span class="wordcount__n"><span class="num" id="content-count-n">0 / 100</span> كلمة</span>
               <span class="wordcount__msg" id="content-count-msg" role="status"></span>
             </p>
-            <p class="error-msg"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alert"/></svg>المحتوى يتجاوز 100 كلمة — اختصره للمتابعة</p>
+            <p class="error-msg"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alert"/></svg><span id="content-error-text">المحتوى يتجاوز 100 كلمة — اختصره للمتابعة</span></p>
           </div>
           <div class="field">
             <label for="f-reference">رابط مرجعي
@@ -516,6 +532,6 @@
   <a href="#order" class="btn btn--primary btn--block">اطلب تصميمك</a>
 </div>
 
-<script src="assets/js/app.js?v=48"></script>
+<script src="assets/js/app.js?v=50"></script>
 </body>
 </html>

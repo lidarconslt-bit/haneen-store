@@ -1011,6 +1011,12 @@ input:focus, select:focus, textarea:focus {
 /* شبكة اختيارات (بدل الكتابة) */
 .opts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
 .opts--3 { grid-template-columns: repeat(3, 1fr); }
+/* أنواع تصاميم باقة «5 تصاميم»: رقم التصميم بجوار قائمة نوعه */
+.designs { display: grid; gap: var(--sp-2); }
+.design { display: flex; align-items: center; gap: var(--sp-2); }
+.design__n { flex: none; width: 24px; text-align: center; font-weight: 700; color: var(--color-primary-dark); }
+.design select { flex: 1; min-width: 0; }
+@media (min-width: 768px) { .designs { grid-template-columns: 1fr 1fr; column-gap: var(--sp-4); } }
 .opt { position: relative; }
 .opt input { position: absolute; opacity: 0; width: 0; height: 0; }
 .opt span {
@@ -1194,6 +1200,9 @@ input:focus, select:focus, textarea:focus {
 .summary__row:last-child { border-bottom: 0; }
 .summary__row dt { color: var(--color-text-muted); flex: none; }
 .summary__row dd { margin: 0; font-weight: 500; text-align: left; }
+/* صف قائمة (تصاميم الباقة): العنوان فوق، والأسطر بمحاذاة بداية السطر */
+.summary__row--list { flex-direction: column; gap: 4px; }
+.summary__row--list dd { text-align: start; white-space: pre-line; }
 
 /* نبض خفيف عند تغيّر السعر */
 @keyframes pricePulse { 0% { transform: scale(1); } 40% { transform: scale(1.07); } 100% { transform: scale(1); } }

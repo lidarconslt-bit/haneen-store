@@ -8,7 +8,8 @@
   var CFG = null;
   var state = {
     step: 1, product: null, size: null, level: null,
-    styles: [], otherStyle: false, audiences: [], extras: {}
+    styles: [], otherStyle: false, audiences: [], extras: {},
+    pkg: 'single', designs: ['', '', '', '', '']
   };
   var DRAFT_KEY = 'haneen_draft';
   var contentLimitSync = function () {};   /* تُضبط في initContentLimit */
@@ -443,6 +444,7 @@
     var s = $('#opt-style input[value="' + styleId + '"]');
     if (s && !s.checked) { s.checked = true; state.styles = checkedValues('style'); }
     if (productId) {
+      applyOrderType(SINGLE);   /* عمل من المعرض تصميم واحد بنوعه */
       var p = $('#opt-product input[value="' + productId + '"]');
       if (p) { p.checked = true; state.product = productId; }
     }
@@ -508,18 +510,20 @@
         '<div class="plan__note">' + esc(p.note || '') + '</div>' +
         '<p class="plan__price"><span class="num plan__num">' + ar(p.price) + '</span>' +
         '<span class="plan__cur">ريال</span></p>' + save +
-        (eta ? '<p class="plan__eta">' + icon('clock') + '<span>' + esc(eta) + '</span></p>' : '') +
+        /* الباقتان بلا مدة ثابتة — تُحدَّد في المحادثة */
+        (p.id === SINGLE ? (eta ? '<p class="plan__eta">' + icon('clock') + '<span>' + esc(eta) + '</span></p>' : '')
+          : '<p class="plan__eta">' + icon('clock') + '<span>مدة التسليم تُحدد في المحادثة</span></p>') +
         '</div>' +
         (sc ? '<p class="plan__scope">' + esc(sc.text) + '</p>' : '') +
         '<ul class="plan__items">' + (p.items || []).map(function (it) {
           return '<li>' + icon('check') + '<span>' + esc(it) + '</span></li>';
         }).join('') + '</ul>' +
-        '<a href="' + esc(waLink(packageMessage(p))) + '" class="btn btn--primary"' +
-        ' target="_blank" rel="noopener">اطلبها الآن</a>' +
-        '<span class="plan__dest">يفتح محادثة واتساب</span></article>';
+        /* كل بطاقة تبدأ من نموذج الطلب — واتساب في نهايته فقط */
+        '<a href="#order" class="btn btn--primary" data-pkg="' + esc(p.id) + '">اطلبها الآن</a>' +
+        '<span class="plan__dest">يفتح نموذج الطلب</span></article>';
     }).join('');
 
-    var note = 'الباقات تُطلب عبر واتساب مباشرة. الأسعار تشمل ' + revisions(ops.freeRevisions) +
+    var note = 'جميع الطلبات تبدأ من نموذج الطلب. الأسعار تشمل ' + revisions(ops.freeRevisions) +
       '، والتعديل الإضافي بـ' + ar(ops.extraRevisionPrice) + ' ريالًا. الدفع بالتحويل البنكي.';
     /* سعر البداية من أرخص نوع في config لا من نص ثابت — والجملة تظهر فقط إن كانت الأسعار متفاوتة فعلًا */
     var single = on(CFG.products).filter(function (x) { return !x.comingSoon; });
@@ -532,16 +536,6 @@
       }
     }
     txt('#pricing-note', note);
-  }
-
-  /* رسالة واتساب جاهزة للإرسال — تحمل اسم الباقة وسعرها */
-  function packageMessage(p) {
-    var L = [];
-    L.push('السلام عليكم، أرغب في طلب «' + p.name + '» من ' + CFG.store.name + '.');
-    L.push('السعر: ' + p.price + ' ريال');
-    L.push('');
-    L.push('أرجو إفادتي بالخطوة التالية.');
-    return L.join('\n');
   }
 
   function renderSteps() {
@@ -568,6 +562,26 @@
     $('#opt-product').innerHTML = products.filter(orderable).map(function (p) {
       return optHtml('product', p.id, p.name, p.price + ' ريال');
     }).join('');
+
+    var pkgs = on(CFG.packages);
+    $('#opt-pkg').innerHTML = pkgs.map(function (p) {
+      return optHtml('pkg', p.id, p.name, p.id === SINGLE ? 'حسب نوع التصميم' : p.price + ' ريال');
+    }).join('');
+    if (pkgs.length < 2) $('#field-pkg').hidden = true;
+    var multiPkg = pkgs.filter(function (p) { return p.designs; })[0];
+    if (multiPkg) {
+      var allowed = (multiPkg.designs.products || []).map(orderableProduct).filter(Boolean);
+      var count = Number(multiPkg.designs.count) || 5;
+      var rows = '';
+      for (var di = 0; di < count; di++) {
+        rows += '<label class="design"><span class="design__n num">' + (di + 1) + '</span>' +
+          '<select name="design" data-design="' + di + '" aria-label="نوع التصميم ' + (di + 1) + '">' +
+          '<option value="">اختر النوع</option>' +
+          allowed.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>'; }).join('') +
+          '</select></label>';
+      }
+      $('#opt-designs').innerHTML = rows;
+    }
 
     $('#opt-style').innerHTML = on(CFG.styles).map(optStyleHtml).join('');
 
@@ -620,7 +634,9 @@
 
     $('#order-form').addEventListener('change', function (e) {
       var t = e.target;
-      if (t.name === 'style') state.styles = checkedValues('style');
+      if (t.name === 'pkg') applyOrderType(t.value);
+      else if (t.dataset.design != null) state.designs[+t.dataset.design] = t.value;
+      else if (t.name === 'style') state.styles = checkedValues('style');
       else if (t.name === 'audience') state.audiences = checkedValues('audience');
       else if (t.name && state.hasOwnProperty(t.name)) state[t.name] = t.value;
       if (t.dataset.addon) state.extras[t.dataset.addon] = t.checked;
@@ -640,6 +656,7 @@
     $('#order-form').addEventListener('submit', submitOrder);
     initContentLimit();
     initPhoneField();
+    applyOrderType(SINGLE);
     $('#btn-copy').addEventListener('click', copyIban);
     /* العودة إلى النموذج ببياناته كما هي — فتح واتساب لا يمسح شيئًا */
     $('#btn-edit-order').addEventListener('click', function () {
@@ -735,11 +752,13 @@
     function bad(el) { var f = el.closest('.field'); setError(f); if (!first) first = f; ok = false; }
 
     if (n === 1) {
-      ['product', 'size', 'level'].forEach(function (g) {
+      /* نوع التصميم للتصميم الواحد وحده: «حزمة درس» محتواها ثابت، و«5 تصاميم» لكل تصميم نوعه */
+      (currentPackage() ? ['size', 'level'] : ['product', 'size', 'level']).forEach(function (g) {
         if (!$('#opt-' + g + ' input:checked')) bad($('#opt-' + g));
       });
       /* حارس ضد حالة مزروعة يدويًا أو مسودة قديمة تحمل منتج «قريبًا» */
-      if (state.product && !orderableProduct(state.product)) bad($('#opt-product'));
+      if (!currentPackage() && state.product && !orderableProduct(state.product)) bad($('#opt-product'));
+      if (isMulti() && !designsComplete()) bad($('#opt-designs'));
       /* الأسلوب: إما اختيار واحد على الأقل، أو وصف أسلوب آخر */
       var hasStyle = state.styles.length > 0;
       var hasOther = state.otherStyle && $('#f-other-style-text').value.trim().length >= 3;
@@ -747,8 +766,17 @@
       if (!state.audiences.length) bad($('#opt-audience'));
     }
     if (n === 2) {
-      if (!$('#f-topic').value.trim()) bad($('#f-topic'));
-      if (countWords($('#f-content').value) > CONTENT_MAX_WORDS) bad($('#f-content'));
+      if (!isMulti() && !$('#f-topic').value.trim()) bad($('#f-topic'));
+      var content = $('#f-content').value, maxW = contentMaxWords();
+      if (countContentWords(content) > maxW) {
+        txt('#content-error-text', isMulti()
+          ? 'موضوعات التصاميم تتجاوز ' + maxW + ' كلمة — اختصرها للمتابعة'
+          : 'المحتوى يتجاوز ' + maxW + ' كلمة — اختصره للمتابعة');
+        bad($('#f-content'));
+      } else if (isMulti() && !parseTopics(content).every(function (x) { return x.trim(); })) {
+        txt('#content-error-text', 'اكتب موضوعات التصاميم الخمسة، موضوعًا بجوار كل رقم');
+        bad($('#f-content'));
+      }
     }
     if (n === 3) {
       if ($('#f-name').value.trim().length < 2) bad($('#f-name'));
@@ -815,14 +843,19 @@
 
   /* تفصيل السعر في مكان واحد: إجمالي النموذج ورسالة واتساب يُقرآن منه معًا،
      فلا يمكن أن يختلف المبلغ المعروض عن المبلغ المُرسَل. */
+  /* تفصيل السعر في مكان واحد: إجمالي النموذج والملخص وشاشة التأكيد ورسالة واتساب
+     تُقرأ منه جميعًا. التصميم الواحد بسعر نوعه، والباقة بسعرها الأساسي من config؛
+     ثم رسوم الأساليب الإضافية مرة واحدة، ثم الإضافات (الاستعجال للتصميم الواحد وحده). */
   function priceParts() {
-    var p = orderableProduct(state.product);
+    var pkg = currentPackage();
+    var p = pkg ? null : orderableProduct(state.product);
     var pr = CFG.pricing || {};
     var free = pr.freeStyles == null ? 2 : pr.freeStyles;
     var unit = pr.extraStylePrice == null ? 15 : pr.extraStylePrice;
 
-    var total = p ? p.price : 0, parts = [];
-    if (p) parts.push({ label: p.name, amount: p.price });
+    var total = 0, parts = [];
+    if (pkg) { total = Number(pkg.price) || 0; parts.push({ label: pkg.name, amount: total, base: true }); }
+    else if (p) { total = p.price; parts.push({ label: p.name, amount: p.price }); }
 
     /* «أسلوب آخر» لا يُحتسب ضمن الأساليب المدفوعة */
     var paidExtra = Math.max(0, state.styles.length - free);
@@ -832,21 +865,21 @@
     /* كل إضافة باسمها — «+15» مجرّدًا لا يقول للمعلمة مقابل ماذا دفعت */
     var ad = CFG.addons || {};
     Object.keys(state.extras).forEach(function (k) {
-      if (state.extras[k] && ad[k]) {
+      if (state.extras[k] && ad[k] && !(pkg && k === 'rush')) {
         total += ad[k].price;
         parts.push({ label: ad[k].label, amount: ad[k].price, plus: true });
       }
     });
     total += stylesCost;
 
-    return { product: p, parts: parts, total: total, free: free, unit: unit, paidExtra: paidExtra };
+    return { product: p, pkg: pkg, ready: !!(pkg || p), parts: parts, total: total, free: free, unit: unit, paidExtra: paidExtra };
   }
 
   function calcTotal() {
     var pp = priceParts();
     bump(pp.total);
     var bd = $('#total-breakdown');
-    if (bd) bd.innerHTML = pp.product ? pp.parts.map(function (x) {
+    if (bd) bd.innerHTML = pp.ready ? pp.parts.map(function (x) {
       return esc(x.label) + ' <b>' + (x.plus ? '+' : '') + ar(x.amount) + '</b>';
     }).join(' · ') : 'اختر نوع التصميم للبدء';
     state.total = pp.total;
@@ -899,8 +932,9 @@
     return 'HN-' + key + '-' + ('00' + seq).slice(-3);
   }
 
-  /* ---------- حدّ المحتوى: 100 كلمة ----------
-     حدّ تجاري لحجم الطلب، منفصل تمامًا عن WA_URL_MAX (حدّ طول رابط واتساب التقني).
+  /* ---------- حدّ المحتوى ----------
+     حدّ تجاري لحجم الطلب، منفصل تمامًا عن WA_URL_MAX (حدّ طول رابط واتساب التقني):
+     100 كلمة للتصميم الواحد و«حزمة درس»، و500 لـ«5 تصاميم» (maxWords في config).
      الكلمة = مقطع بين فراغات (مسافة، سطر جديد، مسافات متعددة، Tab…) يحوي حرفًا
      أو رقمًا؛ علامات الترقيم المنفردة مثل «،» و«-» لا تُحتسب كلمات. */
   var CONTENT_MAX_WORDS = 100;
@@ -915,32 +949,46 @@
     return n;
   }
 
+  /* في «موضوعات التصاميم» أرقام الأسطر (1. 2. …) ترقيم لا كلمات */
+  function countContentWords(t) {
+    return countWords(isMulti() ? String(t || '').replace(/^[ \t]*[1-9١-٩۱-۹][ \t]*[.)\-–:]/gm, ' ') : t);
+  }
+
+  function contentMaxWords() {
+    var p = currentPackage();
+    return (p && Number(p.maxWords)) || CONTENT_MAX_WORDS;
+  }
+
   function renderWordCount(n, blocked) {
     var box = $('#content-count');
     if (!box) return;
-    $('#content-count-n').textContent = n + ' / ' + CONTENT_MAX_WORDS;
+    var max = contentMaxWords();
+    $('#content-count-n').textContent = n + ' / ' + max;
     var msg = '';
-    if (n > CONTENT_MAX_WORDS) msg = 'المحتوى يتجاوز 100 كلمة — احذف بعض الكلمات للمتابعة.';
-    else if (blocked === 'paste') msg = 'النص الملصق يتجاوز الحد الأقصى 100 كلمة — اختصره ثم ألصقه.';
-    else if (blocked) msg = 'وصلت إلى الحد الأقصى 100 كلمة — يمكنك التعديل والحذف، لا إضافة كلمة جديدة.';
+    if (n > max) msg = 'المحتوى يتجاوز ' + max + ' كلمة — احذف بعض الكلمات للمتابعة.';
+    else if (blocked === 'paste') msg = 'النص الملصق يتجاوز الحد الأقصى ' + max + ' كلمة — اختصره ثم ألصقه.';
+    else if (blocked) msg = 'وصلت إلى الحد الأقصى ' + max + ' كلمة — يمكنك التعديل والحذف، لا إضافة كلمة جديدة.';
     $('#content-count-msg').textContent = msg;
     box.classList.toggle('is-error', !!msg);
-    box.classList.toggle('is-full', !msg && n === CONTENT_MAX_WORDS);
+    box.classList.toggle('is-full', !msg && n === max);
   }
 
   /* يُمنع أي تعديل يرفع العدد فوق الحد، ويُسمح دائمًا بما يُنقصه أو يبقيه —
-     فالحذف وتصحيح الأحرف داخل كلمة يعملان كالمعتاد حتى عند 100 كلمة.
+     فالحذف وتصحيح الأحرف داخل كلمة يعملان كالمعتاد حتى عند الحد.
      لوحات الجوال العربية تركّب الكلمة قبل إدراجها، فالفحص ينتظر انتهاء التركيب
      كي لا يُكسر الإدخال في منتصفه. */
   function initContentLimit() {
     var ta = $('#f-content');
     if (!ta) return;
-    var last = { value: ta.value, words: countWords(ta.value) };
+    var last = { value: ta.value, words: countContentWords(ta.value) };
     var composing = false;
 
     function check() {
-      var n = countWords(ta.value);
-      if (n > CONTENT_MAX_WORDS && n > last.words) {
+      /* حدث بلا تغيير في النص — Chrome يُطلق input مرتين عند إدراج نص متعدد الأسطر،
+         والثاني يصل بعد إعادة النص؛ فلا يُعاد رسم العداد وتبقى رسالة الحد ظاهرة */
+      if (ta.value === last.value) return;
+      var n = countContentWords(ta.value);
+      if (n > contentMaxWords() && n > last.words) {
         var caret = Math.max(0, (ta.selectionStart || 0) - (ta.value.length - last.value.length));
         var blocked = (n - last.words > 1) ? 'paste' : 'limit';
         ta.value = last.value;
@@ -956,12 +1004,114 @@
     ta.addEventListener('compositionend', function () { composing = false; check(); });
     ta.addEventListener('input', function (e) { if (composing || e.isComposing) return; check(); });
 
-    /* تغييرات برمجية (استعادة المسودة، طلب جديد) لا تُطلق input — تُزامَن يدويًا */
+    /* تغييرات برمجية (استعادة المسودة، طلب جديد، تغيير نوع الطلب) لا تُطلق input — تُزامَن يدويًا */
     contentLimitSync = function () {
-      last = { value: ta.value, words: countWords(ta.value) };
+      last = { value: ta.value, words: countContentWords(ta.value) };
       renderWordCount(last.words);
     };
     contentLimitSync();
+  }
+
+  /* ---------- نوع الطلب: تصميم واحد أو باقة ----------
+     «تصميم واحد» يُسعَّر بنوع التصميم المختار. الباقتان بسعر أساسي ثابت من config:
+     «حزمة درس» محتواها ثابت (contents)، و«5 تصاميم» يختار العميل نوع كل تصميم من
+     قائمة محددة (designs.products). الأسلوب والمقاس والفئة والمستوى مشتركة للطلب كله. */
+  var SINGLE = 'single';
+  var TOPICS_TEMPLATE = '1. \n2. \n3. \n4. \n5. ';
+  var contentHintText = null;
+
+  function currentPackage() {
+    return state.pkg === SINGLE ? null : byId(on(CFG.packages), state.pkg);
+  }
+  function isMulti() { var p = currentPackage(); return !!(p && p.designs); }
+  function designCount() { var p = currentPackage(); return p && p.designs ? (Number(p.designs.count) || 5) : 0; }
+
+  function designsComplete() {
+    var p = currentPackage();
+    if (!p || !p.designs) return false;
+    var allowed = (p.designs.products || []).filter(function (id) { return orderableProduct(id); });
+    for (var i = 0; i < designCount(); i++) if (allowed.indexOf(state.designs[i]) < 0) return false;
+    return true;
+  }
+
+  function orderReady() {
+    if (!currentPackage()) return !!orderableProduct(state.product);
+    return isMulti() ? designsComplete() : true;
+  }
+
+  function latinDigit(c) {
+    var code = c.charCodeAt(0);
+    if (code >= 0x0660 && code <= 0x0669) return String(code - 0x0660);
+    if (code >= 0x06F0 && code <= 0x06F9) return String(code - 0x06F0);
+    return c;
+  }
+
+  /* موضوع كل تصميم = النص بعد رقمه حتى الرقم التالي؛ وبلا ترقيم: سطر لكل تصميم */
+  function parseTopics(text) {
+    var n = designCount() || 5, topics = [], cur = -1, marked = false, i;
+    for (i = 0; i < n; i++) topics.push('');
+    var lines = String(text || '').split('\n');
+    lines.forEach(function (ln) {
+      var m = ln.match(/^[ \t]*([1-9١-٩۱-۹])[ \t]*[.)\-–:][ \t]*(.*)$/);
+      if (m) {
+        var k = Number(latinDigit(m[1])) - 1;
+        if (k >= 0 && k < n) { marked = true; cur = k; topics[k] = m[2].trim(); return; }
+      }
+      if (cur >= 0 && ln.trim()) topics[cur] += (topics[cur] ? '\n' : '') + ln.trim();
+    });
+    if (!marked) {
+      var filled = lines.map(function (x) { return x.trim(); }).filter(Boolean);
+      for (i = 0; i < n; i++) topics[i] = filled[i] || '';
+      if (filled.length > n) topics[n - 1] = filled.slice(n - 1).join('\n');
+    }
+    return topics;
+  }
+
+  /* «1. تصميم تعليمي — دورة الماء» — نفس الأسطر في الملخص ورسالة واتساب */
+  function designLines() {
+    var topics = parseTopics($('#f-content').value);
+    return topics.map(function (tp, i) {
+      var p = orderableProduct(state.designs[i]);
+      return (i + 1) + '. ' + (p ? p.name : '—') + (tp ? ' — ' + tp : '');
+    });
+  }
+
+  function applyOrderType(id) {
+    if (id !== SINGLE && !byId(on(CFG.packages), id)) id = SINGLE;
+    var wasMulti = isMulti();
+    state.pkg = id;
+    var radio = $('#opt-pkg input[value="' + id + '"]');
+    if (radio) radio.checked = true;
+    var pkg = currentPackage(), multi = isMulti(), lesson = !!pkg && !multi;
+
+    $('#field-product').hidden = !!pkg;
+    $('#field-contents').hidden = !lesson;
+    $('#field-designs').hidden = !multi;
+    $('#field-topic').hidden = multi;
+    if (lesson) txt('#pkg-contents', (pkg.contents || []).join(' · '));
+
+    if (contentHintText === null) contentHintText = $('#content-hint').textContent;
+    txt('#topic-label-text', lesson ? 'موضوع الدرس' : 'موضوع التصميم');
+    txt('#topic-error-text', lesson ? 'اكتب موضوع الدرس' : 'اكتب موضوع التصميم');
+    txt('#content-label-text', multi ? 'موضوعات التصاميم' : 'المحتوى');
+    txt('#content-hint', multi ? 'اكتب موضوع كل تصميم بجوار رقمه، ويمكن إضافة تفاصيله تحته.' : contentHintText);
+
+    /* الاستعجال للتصميم الواحد وحده — مدة الباقات تُحدَّد في المحادثة */
+    var rush = $('#addons-list input[data-addon="rush"]');
+    if (rush) {
+      rush.closest('.addon').hidden = !!pkg;
+      if (pkg) rush.checked = false;
+    }
+    if (pkg) state.extras.rush = false;
+
+    var ta = $('#f-content');
+    ta.maxLength = multi ? 6000 : 4000;
+    if (multi && !ta.value.trim()) ta.value = TOPICS_TEMPLATE;
+    if (!multi && wasMulti && ta.value.replace(/\s+/g, '') === TOPICS_TEMPLATE.replace(/\s+/g, '')) ta.value = '';
+
+    ['#opt-product', '#opt-designs', '#f-topic', '#f-content'].forEach(function (sel) { clearError($(sel).closest('.field')); });
+    contentLimitSync();
+    calcTotal();
   }
 
   /* ---------- الإرسال عبر واتساب ----------
@@ -991,7 +1141,7 @@
     if ($('#f-website').value) return; /* مصيدة السبام */
 
     /* آخر حاجز: لا يُطلب منتج غير متاح مهما كان مصدر الاختيار */
-    if (!orderableProduct(state.product)) {
+    if (!orderReady()) {
       $('#submit-error').textContent = 'هذا المنتج غير متاح للطلب حاليًا. اختر نوع تصميم آخر.';
       gotoStep(1);
       return;
@@ -1029,7 +1179,8 @@
   }
 
   function collect() {
-    var p = orderableProduct(state.product);
+    var pkg = currentPackage(), multi = isMulti();
+    var p = pkg ? null : orderableProduct(state.product);
     var sz = byId(CFG.sizes || [], state.size);
     var lv = byId(CFG.levels || [], state.level);
     var price = priceParts();
@@ -1038,6 +1189,10 @@
       orderNo: orderNo,
       name: $('#f-name').value.trim(),
       phone: normalizePhone($('#f-phone').value),
+      orderType: state.pkg,
+      pkgName: pkg ? pkg.name : '',
+      contents: pkg && !multi ? (pkg.contents || []).join('، ') : '',
+      designs: multi ? designLines() : [],
       productId: p ? p.id : '',
       product: p ? p.name : '',
       styles: namesOf(CFG.styles, state.styles).join('، '),
@@ -1046,7 +1201,7 @@
       audience: namesOf(CFG.audiences, state.audiences).join('، '),
       level: lv ? lv.name : '',
       subject: $('#f-subject').value,
-      topic: $('#f-topic').value.trim(),
+      topic: multi ? '' : $('#f-topic').value.trim(),
       content: $('#f-content').value.trim(),
       reference: $('#f-reference').value.trim(),
       notes: $('#f-notes').value.trim(),
@@ -1059,25 +1214,43 @@
   /* ---------- ملخص الطلب قبل الإرسال ---------- */
   function renderSummary() {
     var d = collectLight();
-    var rows = [
-      ['نوع التصميم', d.product],
-      ['الأسلوب', d.styles + (d.otherStyle ? (d.styles ? ' + ' : '') + 'أسلوب مخصص' : '')],
-      ['المقاس', d.size],
-      ['موجّه إلى', d.audience],
-      ['المستوى', d.level],
-      ['الموضوع', [d.topic, d.subject].filter(Boolean).join(' — ')],
+    var style = d.styles + (d.otherStyle ? (d.styles ? ' + ' : '') + 'أسلوب مخصص' : '');
+    var rows;
+    if (!d.pkgName) {
+      rows = [
+        ['نوع التصميم', d.product],
+        ['الأسلوب', style],
+        ['المقاس', d.size],
+        ['موجّه إلى', d.audience],
+        ['المستوى', d.level],
+        ['الموضوع', [d.topic, d.subject].filter(Boolean).join(' — ')]
+      ];
+    } else {
+      rows = [['نوع الطلب', d.pkgName]];
+      if (d.designs.length) rows.push(['التصاميم', d.designs.join('\n'), 'list']);
+      else rows.push(['المحتويات', d.contents]);
+      rows = rows.concat([
+        ['الأسلوب', style],
+        ['المقاس', d.size],
+        ['موجّه إلى', d.audience],
+        ['المستوى', d.level],
+        [d.designs.length ? 'المجال' : 'موضوع الدرس', d.designs.length ? d.subject : [d.topic, d.subject].filter(Boolean).join(' — ')]
+      ]);
+    }
+    rows = rows.concat([
       ['إضافات', d.extras],
       ['التسليم', deliveryText()],
       ['الإجمالي', d.amount + ' ريال']
-    ].filter(function (r) { return r[1]; });
+    ]).filter(function (r) { return r[1]; });
 
     $('#summary-list').innerHTML = rows.map(function (r) {
-      return '<div class="summary__row"><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+      return '<div class="summary__row' + (r[2] === 'list' ? ' summary__row--list' : '') + '"><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
     }).join('');
   }
 
-  /* مدة التسليم — تتحوّل إلى المستعجل تلقائيًا إن اختيرت إضافة الاستعجال */
+  /* مدة التسليم — المستعجل للتصميم الواحد، والباقتان تُحدَّد مدتهما في المحادثة */
   function deliveryText() {
+    if (currentPackage()) return 'تُحدد في المحادثة';
     var ops = CFG.operations || {};
     var rush = state.extras.rush && (CFG.addons || {}).rush;
     var t = rush ? (ops.rushDeliveryTime || ops.deliveryTime) : ops.deliveryTime;
@@ -1085,17 +1258,20 @@
   }
 
   function collectLight() {
-    var p = orderableProduct(state.product);
+    var pkg = currentPackage(), multi = isMulti();
+    var p = pkg ? null : orderableProduct(state.product);
     var sz = byId(CFG.sizes || [], state.size);
     var lv = byId(CFG.levels || [], state.level);
     var ad = CFG.addons || {}, extras = [];
     Object.keys(state.extras).forEach(function (k) { if (state.extras[k] && ad[k]) extras.push(ad[k].label); });
     return {
+      pkgName: pkg ? pkg.name : '', contents: pkg && !multi ? (pkg.contents || []).join('، ') : '',
+      designs: multi ? designLines() : [],
       product: p ? p.name : '', size: sz ? sz.name : '', level: lv ? lv.name : '',
       styles: namesOf(CFG.styles, state.styles).join('، '),
       otherStyle: state.otherStyle ? $('#f-other-style-text').value.trim() : '',
       audience: namesOf(CFG.audiences, state.audiences).join('، '),
-      subject: $('#f-subject').value, topic: $('#f-topic').value.trim(),
+      subject: $('#f-subject').value, topic: multi ? '' : $('#f-topic').value.trim(),
       extras: extras.join('، '), amount: state.total || 0
     };
   }
@@ -1140,25 +1316,41 @@
   }
 
   /* رسالة الطلب: عناوين قصيرة عريضة (*نص*) وسطر لكل معلومة، والحقول الفارغة
-     لا تظهر. تُقرأ من شاشة الجوال دون تمرير طويل قبل الوصول إلى المبلغ. */
+     لا تظهر. تُقرأ من شاشة الجوال دون تمرير طويل قبل الوصول إلى المبلغ.
+     التصميم الواحد كما كان؛ الباقة: اسمها ومحتوياتها أو تصاميمها، والسعر الأساسي. */
   function buildMessage(o) {
     function line(arr, k, v) { if (v) arr.push(k + ': ' + v); }
+    var multi = !!(o.designs && o.designs.length);
 
     var head = [];
-    head.push('السلام عليكم، أرغب في طلب تصميم من ' + CFG.store.name + '.');
+    head.push('السلام عليكم، أرغب في طلب ' + (o.pkgName ? '«' + o.pkgName + '»' : 'تصميم') + ' من ' + CFG.store.name + '.');
     head.push('', '*رقم الطلب:* ' + o.orderNo);
 
-    head.push('', '*التصميم*');
-    line(head, 'النوع', o.product);
-    line(head, 'الأسلوب', o.styles);
-    line(head, 'أسلوب مخصص', o.otherStyle);
-    line(head, 'المقاس', o.size);
-    line(head, 'موجّه إلى', o.audience);
-    line(head, 'المستوى', o.level);
-    line(head, 'الموضوع', o.topic + (o.subject ? ' (' + o.subject + ')' : ''));
+    if (!o.pkgName) {
+      head.push('', '*التصميم*');
+      line(head, 'النوع', o.product);
+      line(head, 'الأسلوب', o.styles);
+      line(head, 'أسلوب مخصص', o.otherStyle);
+      line(head, 'المقاس', o.size);
+      line(head, 'موجّه إلى', o.audience);
+      line(head, 'المستوى', o.level);
+      line(head, 'الموضوع', o.topic + (o.subject ? ' (' + o.subject + ')' : ''));
+    } else {
+      head.push('', '*الباقة: ' + o.pkgName + '*');
+      line(head, 'المحتويات', o.contents);
+      if (!multi) line(head, 'موضوع الدرس', o.topic + (o.subject ? ' (' + o.subject + ')' : ''));
+      else line(head, 'المجال', o.subject);
+      line(head, multi ? 'الأسلوب المشترك' : 'الأسلوب', o.styles);
+      line(head, 'أسلوب مخصص', o.otherStyle);
+      line(head, multi ? 'المقاس المشترك' : 'المقاس', o.size);
+      line(head, 'موجّه إلى', o.audience);
+      line(head, 'المستوى', o.level);
+    }
 
     head.push('', '*الإجمالي: ' + o.amount + ' ريال*');
-    if (o.priceLines.length > 1) {
+    if (o.pkgName) {
+      o.priceLines.forEach(function (x) { head.push('- ' + (x.base ? 'السعر الأساسي' : x.label) + ': ' + x.amount); });
+    } else if (o.priceLines.length > 1) {
       o.priceLines.forEach(function (x) { head.push('- ' + x.label + ': ' + x.amount); });
     }
     line(head, 'التسليم', o.delivery);
@@ -1172,24 +1364,26 @@
     if (o.notes) tail.push('', '*ملاحظات:*', o.notes);
     tail.push('', 'سأرسل إيصال التحويل بعد الدفع.');
 
+    var title = multi ? '*التصاميم والموضوعات*' : '*المحتوى*';
+    var bodyText = multi ? o.designs.join('\n') : o.content;
     var cut = false;
     function compose(c) {
-      var body = c ? ['', '*المحتوى*', c] : [];
+      var body = c ? ['', title, c] : [];
       if (cut) body.push('(المحتوى أطول من حدّ الرسالة — سأرسل بقيته في رسالة تالية)');
       return head.concat(body, tail).join('\n');
     }
 
-    var text = compose(o.content);
-    if (o.content && waLink(text).length > WA_URL_MAX) {
+    var text = compose(bodyText);
+    if (bodyText && waLink(text).length > WA_URL_MAX) {
       cut = true;
       /* بحث ثنائي عن أطول مقطع يتسع: العربية تتضاعف عند الترميز فلا يصلح حدّ ثابت بالأحرف */
-      var lo = 0, hi = o.content.length;
+      var lo = 0, hi = bodyText.length;
       while (lo < hi) {
         var mid = Math.ceil((lo + hi) / 2);
-        if (waLink(compose(o.content.slice(0, mid) + '…')).length <= WA_URL_MAX) lo = mid;
+        if (waLink(compose(bodyText.slice(0, mid) + '…')).length <= WA_URL_MAX) lo = mid;
         else hi = mid - 1;
       }
-      text = compose(o.content.slice(0, lo) + '…');
+      text = compose(bodyText.slice(0, lo) + '…');
     }
     return { text: text, cut: cut };
   }
@@ -1235,6 +1429,8 @@
     state.product = state.size = state.level = null;
     state.styles = []; state.audiences = []; state.otherStyle = false;
     state.extras = {};
+    state.designs = ['', '', '', '', ''];
+    applyOrderType(SINGLE);
     lastTotal = null;
     orderNo = null;
     $('#other-style-wrap').hidden = true;
@@ -1315,6 +1511,9 @@
          goToOrder بعد الكشف — فيُمنع السلوك الافتراضي حتى لا تُسجَّل قفزة
          إلى عنصر بلا أبعاد ولا يُترك #order في شريط العنوان بلا هدف. */
       e.preventDefault();
+      /* بطاقة السعر تحدد نوع الطلب؛ بقية الأزرار تُبقي النوع الحالي كما هو */
+      var link = t.closest('a[href="#order"]');
+      if (link.dataset.pkg) { applyOrderType(link.dataset.pkg); saveDraft(); }
       gotoStep(1);
       goToOrder();
     });
@@ -1538,10 +1737,11 @@
         var d = { at: Date.now(), state: {
           product: state.product, size: state.size, level: state.level,
           styles: state.styles, otherStyle: state.otherStyle,
-          audiences: state.audiences, extras: state.extras
+          audiences: state.audiences, extras: state.extras,
+          pkg: state.pkg, designs: state.designs
         }, orderNo: orderNo, text: {} };
         TEXT_FIELDS.forEach(function (id) { var e = $('#' + id); if (e) d.text[id] = e.value; });
-        var any = d.state.product || d.state.styles.length || Object.keys(d.text)
+        var any = d.state.product || d.state.pkg !== SINGLE || d.state.styles.length || Object.keys(d.text)
           .some(function (k) { return d.text[k]; });
         if (any) localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
       } catch (e) { /* تجاهل */ }
@@ -1561,6 +1761,9 @@
     state.size = s.size; state.level = s.level;
     state.styles = s.styles || []; state.otherStyle = !!s.otherStyle;
     state.audiences = s.audiences || []; state.extras = s.extras || {};
+    state.designs = (s.designs || []).concat(['', '', '', '', '']).slice(0, 5);
+    $$('#opt-designs select').forEach(function (sel, i) { sel.value = state.designs[i] || ''; state.designs[i] = sel.value; });
+    applyOrderType(s.pkg || SINGLE);
 
     check('product', state.product); check('size', s.size); check('level', s.level);
     (state.styles).forEach(function (v) { check('style', v); });

@@ -203,6 +203,12 @@
     },
     {
       "id": "lesson",
+      "contents": [
+        "بوستر الدرس",
+        "ورقة عمل",
+        "بطاقات المفاهيم"
+      ],
+      "maxWords": 100,
       "name": "حزمة درس",
       "price": 89,
       "note": "كل ما يلزم لدرس واحد",
@@ -223,6 +229,16 @@
     },
     {
       "id": "five",
+      "designs": {
+        "count": 5,
+        "products": [
+          "edu",
+          "worksheet",
+          "activity",
+          "cards"
+        ]
+      },
+      "maxWords": 500,
       "name": "5 تصاميم",
       "price": 139,
       "note": "الأوفر لمن تخطط لأسابيع",
