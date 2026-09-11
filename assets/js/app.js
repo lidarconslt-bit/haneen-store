@@ -36,7 +36,7 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function txt(sel, v) { var e = $(sel); if (e) e.textContent = v == null ? '' : v; }
-  function icon(name) { return '<svg aria-hidden="true"><use href="#i-' + name + '"/></svg>'; }
+  function icon(name) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-' + name + '"/></svg>'; }
   function on(sorted) { return (sorted || []).filter(function (x) { return x.enabled !== false; })
       .sort(function (a, b) { return (a.order || 0) - (b.order || 0); }); }
   function byId(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
@@ -162,12 +162,19 @@
     ].map(function (x) { return '<li>' + icon(x.i) + '<span>' + esc(x.t) + '</span></li>'; }).join('');
   }
 
+  /* الخطوات الثلاث مسار تحريري: رقم كبير يليه خطّ شعري، ثم العنوان والشرح.
+     الأرقام هي العلامة — لا أيقونة ولا رمز. حقل icon في config يبقى كما هو
+     دون استعمال، فلا تُفقد بيانات إن أُعيد أي عرض يعتمده لاحقًا. */
   function renderIdea() {
     var d = CFG.idea || {};
     $('#idea-list').innerHTML = (d.points || []).map(function (p, i) {
-      return '<div class="idea__item" data-reveal style="--d:' + (i * 90) + 'ms">' +
-        '<div class="idea__num">' + icon(p.icon) + '</div>' +
-        '<div><h3>' + esc(p.title) + '</h3><p>' + esc(p.text) + '</p></div></div>';
+      return '<li class="flow__step" data-reveal style="--d:' + (i * 90) + 'ms">' +
+        '<span class="flow__rail">' +
+          '<b class="flow__n num">' + ('0' + (i + 1)).slice(-2) + '</b>' +
+          '<i class="flow__line"></i>' +
+        '</span>' +
+        '<h3 class="flow__title">' + esc(p.title) + '</h3>' +
+        '<p class="flow__text">' + esc(p.text) + '</p></li>';
     }).join('');
   }
 
@@ -508,9 +515,13 @@
         ? '<p class="plan__save">بدلًا من <s class="num">' + ar(sc.listPrice) + '</s> ريال · ' +
           'توفّر ' + riyals(sc.save) + '</p>'
         : '<p class="plan__save plan__save--ghost" aria-hidden="true">&nbsp;</p>';
+      /* الشارة ختم صغير في صدر الورقة، مطلق الموضع داخل الرأس. الرأس يحجز
+         علوّه في البطاقات الثلاث، فتبقى الأسماء على خط أفقي واحد عند كل عرض،
+         ولا يزاحم الاسمَ شيء فيلتفّ سطرين على الشاشات المتوسطة. */
       return '<article class="card plan' + (p.featured ? ' is-featured' : '') + '" data-reveal style="--d:' + (i * 90) + 'ms">' +
+        '<div class="plan__head">' +
         (p.featured ? '<span class="plan__flag">الأكثر طلبًا</span>' : '') +
-        '<div class="plan__head"><div class="plan__name">' + esc(p.name) + '</div>' +
+        '<div class="plan__name">' + esc(p.name) + '</div>' +
         '<div class="plan__note">' + esc(p.note || '') + '</div>' +
         '<p class="plan__price"><span class="num plan__num">' + ar(p.price) + '</span>' +
         '<span class="plan__cur">ريال</span></p>' + save +
@@ -1304,7 +1315,7 @@
     var wa = String((CFG.contact || {}).whatsapp || '').replace(/\D/g, '');
     if (wa) {
       rows.push('<a href="' + esc(waLink((CFG.contact || {}).greeting || '')) + '" target="_blank" rel="noopener">' +
-        '<svg aria-hidden="true"><use href="#i-wa"/></svg>واتساب</a>');
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-wa"/></svg>واتساب</a>');
     }
     var map = {
       phone: { href: function (v) { return 'tel:' + v.replace(/[^\d+]/g, ''); } },
