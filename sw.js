@@ -37,7 +37,7 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
 
   var url = new URL(req.url);
-  if (url.origin !== location.origin) return; /* Apps Script يمر مباشرة — الخط صار محليًا فيُخزَّن كبقية الأصول */
+  if (url.origin !== location.origin) return; /* الأصول الخارجية تمر مباشرة — الخط صار محليًا فيُخزَّن كبقية الأصول */
 
   e.respondWith(
     fetch(req)

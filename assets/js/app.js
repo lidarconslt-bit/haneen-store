@@ -6,12 +6,12 @@
   'use strict';
 
   var CFG = null;
-  var STATUS = { ordersOpen: true, remaining: null };
   var state = {
     step: 1, product: null, size: null, level: null,
     styles: [], otherStyle: false, audiences: [], extras: {}
   };
   var DRAFT_KEY = 'haneen_draft';
+  var contentLimitSync = function () {};   /* تُضبط في initContentLimit */
   var galleryOpen = false;   /* هل وُسّع المعرض؟ يُصفَّر مع كل فلتر */
 
   /* ---------- أدوات ---------- */
@@ -48,7 +48,7 @@
   /* ---------- التحميل ---------- */
   fetch('config.json?v=' + Date.now())
     .then(function (r) { if (!r.ok) throw new Error('config ' + r.status); return r.json(); })
-    .then(function (cfg) { CFG = cfg; build(); return fetchStatus(); })
+    .then(function (cfg) { CFG = cfg; build(); applyStatus(); })
     .catch(function (e) {
       console.error('[حنين] تعذّر تحميل config.json:', e);
       document.body.insertAdjacentHTML('afterbegin',
@@ -655,8 +655,14 @@
     $('#btn-edit-summary').addEventListener('click', function () { gotoStep(1); });
     $('#btn-draft-clear').addEventListener('click', function () { clearDraft(); resetForm(); });
     $('#order-form').addEventListener('submit', submitOrder);
-    $('#btn-submit').textContent = submitLabel();
+    initContentLimit();
     $('#btn-copy').addEventListener('click', copyIban);
+    /* العودة إلى النموذج ببياناته كما هي — فتح واتساب لا يمسح شيئًا */
+    $('#btn-edit-order').addEventListener('click', function () {
+      $('#success').classList.remove('is-shown');
+      showOrderForm(true);
+      gotoStep(3);
+    });
     $('#btn-new').addEventListener('click', function () { clearDraft(); resetForm(); });
 
     calcTotal();
@@ -758,6 +764,7 @@
     }
     if (n === 2) {
       if (!$('#f-topic').value.trim()) bad($('#f-topic'));
+      if (countWords($('#f-content').value) > CONTENT_MAX_WORDS) bad($('#f-content'));
     }
     if (n === 3) {
       if ($('#f-name').value.trim().length < 2) bad($('#f-name'));
@@ -776,36 +783,45 @@
     return null;
   }
 
-  function calcTotal() {
+  /* تفصيل السعر في مكان واحد: إجمالي النموذج ورسالة واتساب يُقرآن منه معًا،
+     فلا يمكن أن يختلف المبلغ المعروض عن المبلغ المُرسَل. */
+  function priceParts() {
     var p = orderableProduct(state.product);
     var pr = CFG.pricing || {};
     var free = pr.freeStyles == null ? 2 : pr.freeStyles;
     var unit = pr.extraStylePrice == null ? 15 : pr.extraStylePrice;
 
     var total = p ? p.price : 0, parts = [];
-    if (p) parts.push(esc(p.name) + ' <b>' + ar(p.price) + '</b>');
+    if (p) parts.push({ label: p.name, amount: p.price });
 
     /* «أسلوب آخر» لا يُحتسب ضمن الأساليب المدفوعة */
     var paidExtra = Math.max(0, state.styles.length - free);
     var stylesCost = paidExtra * unit;
-    if (stylesCost) parts.push('أساليب إضافية <b>+' + ar(stylesCost) + '</b>');
+    if (stylesCost) parts.push({ label: 'أساليب إضافية', amount: stylesCost, plus: true });
 
     /* كل إضافة باسمها — «+15» مجرّدًا لا يقول للمعلمة مقابل ماذا دفعت */
     var ad = CFG.addons || {};
     Object.keys(state.extras).forEach(function (k) {
       if (state.extras[k] && ad[k]) {
         total += ad[k].price;
-        parts.push(esc(ad[k].label) + ' <b>+' + ar(ad[k].price) + '</b>');
+        parts.push({ label: ad[k].label, amount: ad[k].price, plus: true });
       }
     });
     total += stylesCost;
 
-    bump(total);
+    return { product: p, parts: parts, total: total, free: free, unit: unit, paidExtra: paidExtra };
+  }
+
+  function calcTotal() {
+    var pp = priceParts();
+    bump(pp.total);
     var bd = $('#total-breakdown');
-    if (bd) bd.innerHTML = p ? parts.join(' · ') : 'اختر نوع التصميم للبدء';
-    state.total = total;
-    updateStyleNote(free, unit, paidExtra);
-    return total;
+    if (bd) bd.innerHTML = pp.product ? pp.parts.map(function (x) {
+      return esc(x.label) + ' <b>' + (x.plus ? '+' : '') + ar(x.amount) + '</b>';
+    }).join(' · ') : 'اختر نوع التصميم للبدء';
+    state.total = pp.total;
+    updateStyleNote(pp.free, pp.unit, pp.paidExtra);
+    return pp.total;
   }
 
   var lastTotal = null;
@@ -853,99 +869,129 @@
     return 'HN-' + key + '-' + ('00' + seq).slice(-3);
   }
 
-  /* ---------- الإرسال ----------
-     ثلاث حالات لا واحدة:
-       saved  — وصل الطلب إلى الجدول
-       unsent — لا يوجد endpoint مضبوط، فواتساب هو طريق الإتمام
-       failed — انقطع الاتصال: خطأ صريح، ولا شاشة نجاح أبدًا */
-  var pendingOrder = null;
+  /* ---------- حدّ المحتوى: 100 كلمة ----------
+     حدّ تجاري لحجم الطلب، منفصل تمامًا عن WA_URL_MAX (حدّ طول رابط واتساب التقني).
+     الكلمة = مقطع بين فراغات (مسافة، سطر جديد، مسافات متعددة، Tab…) يحوي حرفًا
+     أو رقمًا؛ علامات الترقيم المنفردة مثل «،» و«-» لا تُحتسب كلمات. */
+  var CONTENT_MAX_WORDS = 100;
+  var WORD_CHAR = (function () {
+    try { return new RegExp('[\\p{L}\\p{N}]', 'u'); }
+    catch (e) { return /[^\s!-\/:-@\[-`{-~¡-¿،؛؟٪-٭۔]/; }
+  })();
 
-  function hasEndpoint() {
-    return !!String(((CFG.integrations || {}).ordersEndpoint) || '').trim();
+  function countWords(t) {
+    var parts = String(t || '').split(/\s+/), n = 0;
+    for (var i = 0; i < parts.length; i++) if (parts[i] && WORD_CHAR.test(parts[i])) n++;
+    return n;
   }
 
-  function submitLabel() {
-    return hasEndpoint() ? 'إرسال الطلب' : 'جهّز طلبي';
+  function renderWordCount(n, blocked) {
+    var box = $('#content-count');
+    if (!box) return;
+    $('#content-count-n').textContent = n + ' / ' + CONTENT_MAX_WORDS;
+    var msg = '';
+    if (n > CONTENT_MAX_WORDS) msg = 'المحتوى يتجاوز 100 كلمة — احذف بعض الكلمات للمتابعة.';
+    else if (blocked === 'paste') msg = 'النص الملصق يتجاوز الحد الأقصى 100 كلمة — اختصره ثم ألصقه.';
+    else if (blocked) msg = 'وصلت إلى الحد الأقصى 100 كلمة — يمكنك التعديل والحذف، لا إضافة كلمة جديدة.';
+    $('#content-count-msg').textContent = msg;
+    box.classList.toggle('is-error', !!msg);
+    box.classList.toggle('is-full', !msg && n === CONTENT_MAX_WORDS);
+  }
+
+  /* يُمنع أي تعديل يرفع العدد فوق الحد، ويُسمح دائمًا بما يُنقصه أو يبقيه —
+     فالحذف وتصحيح الأحرف داخل كلمة يعملان كالمعتاد حتى عند 100 كلمة.
+     لوحات الجوال العربية تركّب الكلمة قبل إدراجها، فالفحص ينتظر انتهاء التركيب
+     كي لا يُكسر الإدخال في منتصفه. */
+  function initContentLimit() {
+    var ta = $('#f-content');
+    if (!ta) return;
+    var last = { value: ta.value, words: countWords(ta.value) };
+    var composing = false;
+
+    function check() {
+      var n = countWords(ta.value);
+      if (n > CONTENT_MAX_WORDS && n > last.words) {
+        var caret = Math.max(0, (ta.selectionStart || 0) - (ta.value.length - last.value.length));
+        var blocked = (n - last.words > 1) ? 'paste' : 'limit';
+        ta.value = last.value;
+        try { ta.setSelectionRange(caret, caret); } catch (e) { /* تجاهل */ }
+        renderWordCount(last.words, blocked);
+        return;
+      }
+      last = { value: ta.value, words: n };
+      renderWordCount(n);
+    }
+
+    ta.addEventListener('compositionstart', function () { composing = true; });
+    ta.addEventListener('compositionend', function () { composing = false; check(); });
+    ta.addEventListener('input', function (e) { if (composing || e.isComposing) return; check(); });
+
+    /* تغييرات برمجية (استعادة المسودة، طلب جديد) لا تُطلق input — تُزامَن يدويًا */
+    contentLimitSync = function () {
+      last = { value: ta.value, words: countWords(ta.value) };
+      renderWordCount(last.words);
+    };
+    contentLimitSync();
+  }
+
+  /* ---------- الإرسال عبر واتساب ----------
+     قناة الطلب الرسمية واتساب: لا خادم ولا جدول. الزر يبني رسالة منظّمة ويفتح
+     محادثة المتجر بها جاهزة، والطلب لا يصلنا إلا حين تضغط العميلة «إرسال» داخل
+     واتساب — لذلك لا تُمسح المسودة هنا، وتبقى حتى «طلب جديد». */
+
+  /* خادم wa.me قُيس فقبل روابط حتى 24 ألف حرف، لكن تمرير الرابط إلى تطبيق
+     الجوال أو سطح المكتب أقل تسامحًا. 16 ألف حرف مُرمَّز تتسع لقرابة 2800 حرف
+     عربي؛ ما يزيد من المحتوى يُختصر في الرسالة ويبقى كاملًا للنسخ. */
+  var WA_URL_MAX = 16000;
+  var orderNo = null;   /* يُحجز عند أول إرسال ويبقى ثابتًا حتى «طلب جديد» */
+  var opening = false;  /* نقرة مزدوجة لا تفتح محادثتين */
+
+  function storeWaNumber() {
+    var n = String((CFG.contact || {}).whatsapp || '').replace(/[^\d]/g, '');
+    return /^\d{8,15}$/.test(n) ? n : '';
   }
 
   function submitOrder(e) {
     e.preventDefault();
+    if (opening) return;
+    /* الخطوتان السابقتان تُفحصان أيضًا: مسودة مستعادة قد تنقص حقلًا منهما */
+    if (!validateStep(1)) { gotoStep(1); validateStep(1); return; }
+    if (!validateStep(2)) { gotoStep(2); validateStep(2); return; }
     if (!validateStep(3)) return;
     if ($('#f-website').value) return; /* مصيدة السبام */
 
-    /* آخر حاجز قبل الإرسال: لا يُتم طلب لمنتج غير متاح مهما كان مصدر الاختيار */
+    /* آخر حاجز: لا يُطلب منتج غير متاح مهما كان مصدر الاختيار */
     if (!orderableProduct(state.product)) {
       $('#submit-error').textContent = 'هذا المنتج غير متاح للطلب حاليًا. اختر نوع تصميم آخر.';
       gotoStep(1);
       return;
     }
-
-    /* رقم الطلب يُحجز مرة واحدة فلا يتغيّر عند إعادة المحاولة */
-    if (!pendingOrder) pendingOrder = collect();
-    sendOrder(pendingOrder);
-  }
-
-  function sendOrder(payload) {
-    var btn = $('#btn-submit');
-    btn.disabled = true;
-    btn.textContent = 'جارٍ الإرسال…';
+    if (!storeWaNumber()) {
+      console.error('[حنين] رقم واتساب المتجر غير صالح في config.json (contact.whatsapp)');
+      $('#submit-error').innerHTML = '<div class="alert alert--error" role="alert">' + icon('alert') +
+        '<span>تعذّر فتح واتساب لأن رقم المتجر غير مضبوط. بياناتك محفوظة ولم تضع.</span></div>';
+      return;
+    }
     $('#submit-error').innerHTML = '';
 
-    saveLocal(payload);
+    if (!orderNo) orderNo = makeOrderNo();
+    var order = collect();
+    saveLocal(order);
+    saveDraft();   /* رقم الطلب يدخل المسودة فيبقى نفسه بعد إعادة فتح الصفحة */
 
-    if (!hasEndpoint()) { finish(payload, 'unsent'); return; }
+    var msg = buildMessage(order);
+    var url = waLink(msg.text);
 
-    var ctrl = new AbortController();
-    var to = setTimeout(function () { ctrl.abort(); }, 8000);
+    /* الفتح داخل نقرة المستخدم نفسها وإلا حجبه متصفح الجوال. خاصية noopener
+       تجعل window.open تُرجع null دائمًا فلا نعرف إن حُجب الفتح، لذلك يُقطع
+       الارتباط بالنافذة يدويًا بعد فتحها. */
+    opening = true;
+    setTimeout(function () { opening = false; }, 1200);
+    var w = null;
+    try { w = window.open(url, '_blank'); } catch (err) { w = null; }
+    if (w) { try { w.opener = null; } catch (err) {} }
 
-    fetch((CFG.integrations || {}).ordersEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-      signal: ctrl.signal,
-      redirect: 'follow'
-    })
-      .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
-      .then(function (res) {
-        clearTimeout(to);
-        if (res && res.error) throw new Error(res.error);
-        if (res && res.orderNo) payload.orderNo = res.orderNo;
-        finish(payload, 'saved');
-      })
-      .catch(function (err) {
-        clearTimeout(to);
-        console.warn('[حنين] تعذّر تسجيل الطلب:', err);
-        failSend(payload);
-      });
-  }
-
-  /* فشل الإرسال: لا نعرض نجاحًا، ولا نمسح المسودّة، ونترك مخرجين واضحين */
-  function failSend(payload) {
-    var btn = $('#btn-submit');
-    btn.disabled = false;
-    btn.textContent = submitLabel();
-
-    $('#submit-error').innerHTML =
-      '<div class="alert alert--error sendfail" role="alert">' +
-        icon('alert') +
-        '<div style="flex:1">' +
-          '<b>تعذّر إرسال طلبك</b>' +
-          '<p>انقطع الاتصال قبل أن يصل الطلب. بياناتك محفوظة ولم تضع — ' +
-          'أعد المحاولة، أو أرسل الطلب عبر واتساب مباشرة.</p>' +
-          '<div class="sendfail__acts">' +
-            '<button type="button" class="btn btn--primary btn--sm" id="btn-retry">أعد المحاولة</button>' +
-            '<a class="btn btn--whatsapp btn--sm" id="fail-wa" target="_blank" rel="noopener" href="' +
-              esc(waLink(orderMessage(payload))) + '">إرسال عبر واتساب</a>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-
-    var r = $('#btn-retry');
-    if (r) r.addEventListener('click', function () { sendOrder(payload); });
-    $('#submit-error').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showSent(order, url, msg, !!w);
   }
 
   function namesOf(list, ids) {
@@ -956,12 +1002,10 @@
     var p = orderableProduct(state.product);
     var sz = byId(CFG.sizes || [], state.size);
     var lv = byId(CFG.levels || [], state.level);
-    var ad = CFG.addons || {}, extras = [];
-    Object.keys(state.extras).forEach(function (k) { if (state.extras[k] && ad[k]) extras.push(ad[k].label); });
+    var price = priceParts();
 
     return {
-      key: (CFG.integrations || {}).sharedKey || '',
-      orderNo: makeOrderNo(),
+      orderNo: orderNo,
       name: $('#f-name').value.trim(),
       phone: normalizePhone($('#f-phone').value),
       productId: p ? p.id : '',
@@ -976,9 +1020,9 @@
       content: $('#f-content').value.trim(),
       reference: $('#f-reference').value.trim(),
       notes: $('#f-notes').value.trim(),
-      extras: extras.join('، '),
-      amount: calcTotal(),
-      status: 'جديد'
+      priceLines: price.parts,
+      amount: price.total,
+      delivery: deliveryText()
     };
   }
 
@@ -1034,51 +1078,94 @@
     } catch (e) { /* تجاهل */ }
   }
 
-  function finish(p, mode) {
-    clearDraft();
-    pendingOrder = null;
-    txt('#order-number', p.orderNo);
-    txt('#pay-amount', p.amount);
-    $('#btn-wa').href = waLink(orderMessage(p));
+  /* شاشة التأكيد بعد فتح واتساب: بيانات التحويل، وزر واتساب حقيقي احتياطًا —
+     متصفحات التطبيقات (إنستغرام، تيك توك…) قد تحجب الفتح التلقائي. */
+  function showSent(o, url, msg, opened) {
+    txt('#order-number', o.orderNo);
+    txt('#pay-amount', o.amount);
+    $('#btn-wa').href = url;
 
-    /* الطلب لم يصل إلى جدول بعد — واتساب خطوة لازمة لا اختيارية */
-    var st = $('#success-state');
-    if (st) {
-      st.innerHTML = (mode === 'unsent')
-        ? '<div class="alert alert--warn" role="status">' + icon('alert') +
-          '<span>طلبك جاهز ولم يصل إلينا بعد. ' +
-          'اضغط <b>إرسال الطلب عبر واتساب</b> لنبدأ التنفيذ.</span></div>'
-        : '';
+    /* الموقع لا يعرف إن ضُغط «إرسال» داخل واتساب — فالصياغة تصف التجهيز لا الوصول.
+       وإن حُجب الفتح فعنوان «في واتساب» لا يصدق، فيتبدّل حتى يُفتح من الزر. */
+    var msgs = CFG.messages || {};
+    txt('#success-title', opened ? msgs.successTitle : 'طلبك جاهز للإرسال');
+    txt('#success-body', msgs.successBody);
+    var html = opened
+      ? '<div class="alert alert--info" role="status">' + icon('info') +
+        '<span>لم تظهر محادثة واتساب؟ استخدم زر <b>فتح واتساب وإرسال الطلب</b> أدناه.</span></div>'
+      : '<div class="alert alert--warn" role="status">' + icon('alert') +
+        '<span>لم يُفتح واتساب تلقائيًا. اضغط <b>فتح واتساب وإرسال الطلب</b> أدناه أولًا.</span></div>';
+    if (msg.cut) {
+      html += '<div class="alert alert--warn" role="status" style="margin-top:var(--sp-2)">' + icon('alert') +
+        '<span style="flex:1">المحتوى أطول من حدّ رسالة واتساب، فأُرفق جزؤه الأول. انسخه كاملًا وألصقه في رسالة تالية.</span>' +
+        '<button type="button" class="btn btn--secondary btn--sm" id="btn-copy-content" style="align-self:center">نسخ المحتوى</button></div>';
     }
+    $('#success-state').innerHTML = html;
+    var cc = $('#btn-copy-content');
+    if (cc) cc.addEventListener('click', function () { copyText(o.content, cc, 'نسخ المحتوى'); });
 
     showOrderForm(false);
     $('#success').classList.add('is-shown');
     $('#success').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    var b = $('#btn-submit'); b.disabled = false; b.textContent = submitLabel();
   }
 
-  function orderMessage(p) {
-    var L = [];
-    L.push('طلب تصميم من موقع ' + CFG.store.name);
-    L.push('رقم الطلب: ' + p.orderNo);
-    L.push('');
-    L.push('الاسم: ' + p.name);
-    L.push('نوع التصميم: ' + p.product);
-    if (p.styles) L.push('الأسلوب: ' + p.styles);
-    if (p.otherStyle) L.push('أسلوب مخصص: ' + p.otherStyle);
-    L.push('المقاس: ' + p.size);
-    L.push('موجّه إلى: ' + p.audience);
-    L.push('المستوى: ' + p.level);
-    L.push('الموضوع: ' + p.topic);
-    if (p.subject) L.push('المجال: ' + p.subject);
-    if (p.extras) L.push('إضافات: ' + p.extras);
-    L.push('المبلغ: ' + p.amount + ' ريال');
-    if (p.content) L.push('', 'المحتوى:', p.content);
-    if (p.reference) L.push('', 'رابط مرجعي: ' + p.reference);
-    if (p.notes) L.push('', 'ملاحظات: ' + p.notes);
-    L.push('', 'سأرسل إيصال التحويل بعد قليل.');
-    return L.join('\n');
+  /* رسالة الطلب: عناوين قصيرة عريضة (*نص*) وسطر لكل معلومة، والحقول الفارغة
+     لا تظهر. تُقرأ من شاشة الجوال دون تمرير طويل قبل الوصول إلى المبلغ. */
+  function buildMessage(o) {
+    function line(arr, k, v) { if (v) arr.push(k + ': ' + v); }
+
+    var head = [];
+    head.push('السلام عليكم، أرغب في طلب تصميم من ' + CFG.store.name + '.');
+    head.push('', '*رقم الطلب:* ' + o.orderNo);
+
+    head.push('', '*التصميم*');
+    line(head, 'النوع', o.product);
+    line(head, 'الأسلوب', o.styles);
+    line(head, 'أسلوب مخصص', o.otherStyle);
+    line(head, 'المقاس', o.size);
+    line(head, 'موجّه إلى', o.audience);
+    line(head, 'المستوى', o.level);
+    line(head, 'الموضوع', o.topic + (o.subject ? ' (' + o.subject + ')' : ''));
+
+    head.push('', '*الإجمالي: ' + o.amount + ' ريال*');
+    if (o.priceLines.length > 1) {
+      o.priceLines.forEach(function (x) { head.push('- ' + x.label + ': ' + x.amount); });
+    }
+    line(head, 'التسليم', o.delivery);
+
+    head.push('', '*بياناتي*');
+    line(head, 'الاسم', o.name);
+    line(head, 'الجوال', localPhone(o.phone));
+
+    var tail = [];
+    if (o.reference) tail.push('', '*رابط مرجعي:* ' + o.reference);
+    if (o.notes) tail.push('', '*ملاحظات:*', o.notes);
+    tail.push('', 'سأرسل إيصال التحويل بعد الدفع.');
+
+    var cut = false;
+    function compose(c) {
+      var body = c ? ['', '*المحتوى*', c] : [];
+      if (cut) body.push('(المحتوى أطول من حدّ الرسالة — سأرسل بقيته في رسالة تالية)');
+      return head.concat(body, tail).join('\n');
+    }
+
+    var text = compose(o.content);
+    if (o.content && waLink(text).length > WA_URL_MAX) {
+      cut = true;
+      /* بحث ثنائي عن أطول مقطع يتسع: العربية تتضاعف عند الترميز فلا يصلح حدّ ثابت بالأحرف */
+      var lo = 0, hi = o.content.length;
+      while (lo < hi) {
+        var mid = Math.ceil((lo + hi) / 2);
+        if (waLink(compose(o.content.slice(0, mid) + '…')).length <= WA_URL_MAX) lo = mid;
+        else hi = mid - 1;
+      }
+      text = compose(o.content.slice(0, lo) + '…');
+    }
+    return { text: text, cut: cut };
   }
+
+  /* 9665XXXXXXXX كما يُخزَّن ← 05XXXXXXXX كما يقرؤه الفريق في الرسالة */
+  function localPhone(d) { return d ? '0' + String(d).slice(3) : ''; }
 
   function waLink(text) {
     var n = String((CFG.contact || {}).whatsapp || '').replace(/[^\d]/g, '');
@@ -1095,9 +1182,11 @@
   }
 
   function copyIban() {
-    var v = ($('#pay-iban').textContent || '').trim();
-    var btn = $('#btn-copy');
-    function done() { btn.textContent = 'تم النسخ'; setTimeout(function () { btn.textContent = 'نسخ الآيبان'; }, 2000); }
+    copyText(($('#pay-iban').textContent || '').trim(), $('#btn-copy'), 'نسخ الآيبان');
+  }
+
+  function copyText(v, btn, idle) {
+    function done() { btn.textContent = 'تم النسخ'; setTimeout(function () { btn.textContent = idle; }, 2000); }
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(v).then(done).catch(fallback);
     } else fallback();
@@ -1112,10 +1201,12 @@
 
   function resetForm() {
     $('#order-form').reset();
+    contentLimitSync();
     state.product = state.size = state.level = null;
     state.styles = []; state.audiences = []; state.otherStyle = false;
     state.extras = {};
     lastTotal = null;
+    orderNo = null;
     $('#other-style-wrap').hidden = true;
     $('#style-note').hidden = true;
     $('#success').classList.remove('is-shown');
@@ -1125,31 +1216,11 @@
     goToOrder();   /* يبقى ظاهرًا، ويحترم تقليل الحركة كبقية المداخل */
   }
 
-  /* ---------- حالة المتجر والسعة ---------- */
-  function fetchStatus() {
+  /* ---------- حالة المتجر ----------
+     الإغلاق يدوي من config.json (operations.ordersOpen) — لا خادم يُسأل عن الحالة أو السعة. */
+  function applyStatus() {
     var ops = CFG.operations || {};
-    var url = (CFG.integrations || {}).ordersEndpoint;
-    if (!url) { applyStatus({ ordersOpen: ops.ordersOpen !== false, remaining: null }); return; }
-    var q = url + (url.indexOf('?') > -1 ? '&' : '?') + 'action=status&key=' +
-      encodeURIComponent((CFG.integrations || {}).sharedKey || '');
-    fetch(q, { redirect: 'follow' })
-      .then(function (r) { return r.json(); })
-      .then(function (s) {
-        applyStatus({
-          ordersOpen: ops.ordersOpen !== false && s.ordersOpen !== false,
-          remaining: typeof s.remaining === 'number' ? s.remaining : null
-        });
-      })
-      .catch(function () { applyStatus({ ordersOpen: ops.ordersOpen !== false, remaining: null }); });
-  }
-
-  function applyStatus(s) {
-    STATUS = s;
-    var ops = CFG.operations || {};
-    /* الإغلاق يدوي فقط (ordersOpen) — لا إغلاق تلقائي بالسعة في هذه المرحلة */
-    var closed = !s.ordersOpen;
-
-    if (closed) {
+    if (ops.ordersOpen === false) {
       showOrderForm(false);
       $('#store-closed').style.display = '';
       txt('#closed-text', ops.closedMessage);
@@ -1438,7 +1509,7 @@
           product: state.product, size: state.size, level: state.level,
           styles: state.styles, otherStyle: state.otherStyle,
           audiences: state.audiences, extras: state.extras
-        }, text: {} };
+        }, orderNo: orderNo, text: {} };
         TEXT_FIELDS.forEach(function (id) { var e = $('#' + id); if (e) d.text[id] = e.value; });
         var any = d.state.product || d.state.styles.length || Object.keys(d.text)
           .some(function (k) { return d.text[k]; });
@@ -1454,6 +1525,7 @@
     if (Date.now() - (raw.at || 0) > 7 * 24 * 3600 * 1000) { clearDraft(); return; }
 
     var s = raw.state;
+    if (raw.orderNo) orderNo = raw.orderNo;
     /* مسودة محفوظة قد تحمل منتجًا صار «قريبًا» بعد حفظها — نُسقطه */
     state.product = orderableProduct(s.product) ? s.product : '';
     state.size = s.size; state.level = s.level;
@@ -1470,6 +1542,7 @@
     TEXT_FIELDS.forEach(function (id) {
       var e = $('#' + id); if (e && raw.text && raw.text[id] != null) e.value = raw.text[id];
     });
+    contentLimitSync();
     if (state.otherStyle) {
       $('#f-other-style').checked = true;
       $('#other-style-wrap').hidden = false;

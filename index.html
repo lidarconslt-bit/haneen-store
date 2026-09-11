@@ -31,7 +31,7 @@
 <!-- الخط مستضاف ذاتيًا: XB Shafigh بوزنيه الحقيقيين — لا اعتماد على خطوط خارجية -->
 <link rel="preload" href="assets/fonts/XBShafigh-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/XBShafigh-Bold.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=44">
+<link rel="stylesheet" href="assets/css/style.css?v=48">
 </head>
 <body id="top">
 
@@ -314,7 +314,13 @@
             <label for="f-content">المحتوى
               <span class="field__hint">يمكن لصق المحتوى هنا، أو كتابة «سأرسله عبر واتساب» وإرساله لاحقًا مع رقم الطلب.</span>
             </label>
-            <textarea id="f-content" name="content" placeholder="النقاط أو النص المطلوب ظهوره في التصميم…" maxlength="4000"></textarea>
+            <textarea id="f-content" name="content" placeholder="النقاط أو النص المطلوب ظهوره في التصميم…" maxlength="4000" aria-describedby="content-count"></textarea>
+            <!-- حدّ تجاري 100 كلمة — منفصل عن حدّ طول رابط واتساب التقني في app.js -->
+            <p class="wordcount" id="content-count">
+              <span class="wordcount__n"><span class="num" id="content-count-n">0 / 100</span> كلمة</span>
+              <span class="wordcount__msg" id="content-count-msg" role="status"></span>
+            </p>
+            <p class="error-msg"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alert"/></svg>المحتوى يتجاوز 100 كلمة — اختصره للمتابعة</p>
           </div>
           <div class="field">
             <label for="f-reference">رابط مرجعي
@@ -375,7 +381,10 @@
         <div class="form-nav">
           <button type="button" class="btn btn--secondary" id="btn-prev" style="display:none">السابق</button>
           <button type="button" class="btn btn--primary" id="btn-next">التالي</button>
-          <button type="submit" class="btn btn--primary" id="btn-submit" style="display:none">إرسال الطلب</button>
+          <button type="submit" class="btn btn--whatsapp" id="btn-submit" style="display:none">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-wa"/></svg>
+            فتح واتساب وإرسال الطلب
+          </button>
         </div>
       </form>
 
@@ -404,10 +413,11 @@
           <p style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-top:var(--sp-3)" id="pay-instructions"></p>
         </div>
 
-        <a class="btn btn--whatsapp btn--block" id="btn-wa" href="#" style="margin-bottom:var(--sp-3)">
+        <a class="btn btn--whatsapp btn--block" id="btn-wa" href="#" target="_blank" rel="noopener" style="margin-bottom:var(--sp-3)">
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-wa"/></svg>
-          إرسال الطلب عبر واتساب
+          فتح واتساب وإرسال الطلب
         </a>
+        <button type="button" class="btn btn--secondary btn--block" id="btn-edit-order" style="margin-bottom:var(--sp-3)">تعديل الطلب</button>
         <button type="button" class="btn btn--secondary btn--block" id="btn-new">طلب جديد</button>
 
         <p style="font-size:var(--fs-xs);color:var(--color-text-muted);margin-top:var(--sp-4);text-align:center" id="content-disclaimer"></p>
@@ -512,6 +522,6 @@
   <a href="#order" class="btn btn--primary btn--block">اطلب تصميمك</a>
 </div>
 
-<script src="assets/js/app.js?v=43"></script>
+<script src="assets/js/app.js?v=46"></script>
 </body>
 </html>

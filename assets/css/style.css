@@ -149,9 +149,13 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 .wrap { width: 100%; max-width: var(--wrap); margin-inline: auto; padding-inline: var(--sp-4); }
+/* !important لأن قاعدة الحقول (input[type="text"]) أعلى تحديدًا من الصنف، فكانت تمنح
+   مصيدة السبام عرض 100% وارتفاع 48px وهي مطلقة الموضع — فتفيض 32px يسارًا وتُزيح
+   الصفحة أفقيًا على الجوال عند الخطوة الثالثة */
 .sr-only {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  position: absolute !important; width: 1px !important; height: 1px !important;
+  min-height: 0 !important; padding: 0 !important; margin: -1px !important;
+  overflow: hidden !important; clip: rect(0 0 0 0) !important; white-space: nowrap !important; border: 0 !important;
 }
 :focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; border-radius: 4px; }
 
@@ -995,6 +999,15 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
   display: block; font-size: var(--fs-sm); font-weight: 600; margin-bottom: var(--sp-2);
 }
 .field__hint { font-size: var(--fs-xs); color: var(--color-text-muted); font-weight: 400; margin-top: 2px; }
+/* عدّاد كلمات المحتوى: الرقم في طرف السطر، ورسالة الحد تحته عند الحاجة */
+.wordcount {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px var(--sp-2);
+  margin-top: 6px; font-size: var(--fs-xs); line-height: 1.6; color: var(--color-text-muted);
+}
+.wordcount__msg { flex-basis: 100%; text-align: start; }
+.wordcount__msg:empty { display: none; }
+.wordcount.is-full { color: var(--color-accent-ink); }
+.wordcount.is-error { color: var(--color-danger); font-weight: 600; }
 .req { color: var(--color-danger); }
 
 input[type="text"], input[type="tel"], select, textarea {
@@ -1136,13 +1149,12 @@ input:focus, select:focus, textarea:focus {
 .total__breakdown b { font-weight: 500; color: var(--color-text); }
 .form-nav { display: flex; gap: var(--sp-2); margin-top: var(--sp-4); }
 .form-nav .btn { flex: 1; }
-
-/* فشل الإرسال — مسار خطأ صريح بدل شاشة نجاح كاذبة */
-.sendfail { display: block; }
-.sendfail b { display: block; margin-bottom: 4px; }
-.sendfail p { font-size: var(--fs-xs); line-height: 1.7; }
-.sendfail__acts { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
-.sendfail__acts .btn { flex: 1 1 160px; }
+/* «إرسال الطلب عبر واتساب» أطول من «التالي»: على الشاشات الضيقة يأخذ سطرًا كاملًا
+   فوق «السابق» بدل أن ينكسر اسمه على سطرين داخل نصف العرض */
+@media (max-width: 479px) {
+  .form-nav { flex-wrap: wrap; }
+  .form-nav #btn-submit { flex-basis: 100%; order: -1; }
+}
 
 /* حالة الطلب في شاشة النجاح */
 #success-state:empty { display: none; }
