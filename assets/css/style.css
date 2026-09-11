@@ -430,26 +430,6 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
     rgba(79, 115, 96, 0)    100%);
 }
 
-/* ============ مسار العمل — الخطوات الثلاث ============
-   بديل الأيقونات الدائرية: رقم كبير دافئ يليه خطّ شعري يمتد ويتلاشى.
-   على سطح المكتب تقع الخطوط الثلاثة على ارتفاع واحد فتُقرأ خطًا متصلًا
-   يمرّ بالخطوات — مسار بلا رسوم ولا زخرفة، من مفردات الورق نفسها. */
-.flow { display: grid; gap: var(--sp-5); margin: 0; padding: 0; list-style: none; }
-.flow__step { min-width: 0; }
-.flow__rail { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: 10px; }
-.flow__n {
-  flex: none; font-size: 1.625rem; font-weight: 700; line-height: 1;
-  color: var(--color-accent);
-}
-/* التلاشي فيزيائي (to left) لأن الخط يبدأ بعد الرقم يمينًا ويمتد يسارًا */
-.flow__line {
-  flex: 1 1 auto; min-width: 20px; height: 1px; display: block;
-  background: linear-gradient(to left,
-    var(--color-border) 0, var(--color-border) 58%, transparent 100%);
-}
-.flow__title { font-size: var(--fs-md); margin-bottom: 4px; }
-.flow__text { font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.65; }
-
 /* ============ المعرض ============
    أعمال حنين أوراق مطبوعة معروضة على سطح كريمي — لا بطاقات متجر.
    وكل عمل لوحة كاملة بهوامشها وترويستها وشريطها السفلي، فلا يُقصّ أبدًا:
@@ -870,21 +850,11 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
   body.in-order .wa-fab { opacity: 0; transform: scale(.92); pointer-events: none; }
 }
 
-/* «كيف نقسّم العمل؟» — كتلة مستقلة قبل الخطوات، لا جزء منها */
-.howblock {
-  margin-bottom: var(--sp-7); padding-bottom: var(--sp-6);
-  border-bottom: 1px solid var(--color-border);
-}
-.howblock__title {
-  font-size: var(--fs-md); color: var(--color-secondary);
-  margin-bottom: var(--sp-4);
-}
-/* «أربع خطوات فقط» انتقل ليجاور الخطوات مباشرة، فلا يُحسب معه
-   ما قبله من عناصر. المسافة أوسع أعلاه لتأكيد أنه بداية كتلة جديدة. */
-.steps__title { margin-bottom: var(--sp-5); }
+/* «كيف يتم الطلب؟» — القسم الوحيد الذي يشرح طريقة الطلب، فالعنوان قريب من خطواته */
+.steps__title { margin-bottom: var(--sp-4); }
 
 /* ============ الخطوات ============ */
-.steps { display: grid; gap: var(--sp-5); counter-reset: s; position: relative; }
+.steps { display: grid; gap: var(--sp-4); counter-reset: s; position: relative; }
 .step { display: flex; gap: var(--sp-3); align-items: flex-start; }
 .step__n {
   width: 40px; height: 40px; flex: none; border-radius: 50%;
@@ -895,8 +865,8 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 .step p { font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.6; }
 
 /* ============ السبورة ============
-   المشهد الغني الوحيد في القسم: الخطوات الأربع وحدها.
-   النقاط الثلاث و«ماذا تستلم؟» يبقيان على الورق كما هما. */
+   المشهد الغني الوحيد في القسم: خطوات الطلب الأربع وحدها.
+   «ماذا تستلم؟» يبقى على الورق كما هو. الحشو مضغوط على قدر المحتوى. */
 .boardwrap {
   margin-bottom: var(--sp-6);
   padding: 12px;
@@ -906,7 +876,7 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
 }
 .board {
   position: relative; overflow: hidden; border-radius: 6px;
-  padding: var(--sp-6) var(--sp-4) var(--sp-5);
+  padding: var(--sp-5) var(--sp-4) 20px;
   background:
     radial-gradient(120% 80% at 28% 8%, rgba(255,255,255,.07), transparent 55%),
     radial-gradient(90% 70% at 78% 92%, rgba(255,255,255,.05), transparent 60%),
@@ -928,7 +898,7 @@ button.card { font-size: inherit; color: inherit; line-height: inherit; }
   background: transparent; color: var(--color-chalk);
   border: 2px solid rgba(239,233,219,.52);
 }
-/* خطوة الدفع هي التي تتوقف عندها المعلمة فعلًا */
+/* إرسال الطلب داخل واتساب هو الخطوة التي يتوقف عليها وصول الطلب فعلًا */
 .board .step:nth-child(3) .step__n {
   border-color: var(--color-accent-light); color: var(--color-accent-light);
 }
@@ -1435,8 +1405,6 @@ body.cta-visible .wa-fab { inset-block-end: calc(76px + env(safe-area-inset-bott
   .header__cta { padding-inline: 24px; }
   .logo__img { height: 34px; }
   .footer__logo { height: 40px; }
-  .flow { grid-template-columns: repeat(3, 1fr); gap: var(--sp-6); }
-  .flow__n { font-size: 2rem; }
   .story__mark { height: 38px; }
   .story__inner { padding-block: 56px; }
   .story p { font-size: var(--fs-lg); }

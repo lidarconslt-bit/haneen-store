@@ -63,7 +63,6 @@
     renderHero();
     renderTrustbar();
     renderStory();
-    renderIdea();
     renderStyles();
     renderGallery();
     renderPlans();
@@ -160,22 +159,6 @@
       { i: 'print', t: 'PDF للطباعة + PNG للاستخدام الرقمي' },
       { i: 'size', t: 'بالمقاس الذي تختاره' }
     ].map(function (x) { return '<li>' + icon(x.i) + '<span>' + esc(x.t) + '</span></li>'; }).join('');
-  }
-
-  /* الخطوات الثلاث مسار تحريري: رقم كبير يليه خطّ شعري، ثم العنوان والشرح.
-     الأرقام هي العلامة — لا أيقونة ولا رمز. حقل icon في config يبقى كما هو
-     دون استعمال، فلا تُفقد بيانات إن أُعيد أي عرض يعتمده لاحقًا. */
-  function renderIdea() {
-    var d = CFG.idea || {};
-    $('#idea-list').innerHTML = (d.points || []).map(function (p, i) {
-      return '<li class="flow__step" data-reveal style="--d:' + (i * 90) + 'ms">' +
-        '<span class="flow__rail">' +
-          '<b class="flow__n num">' + ('0' + (i + 1)).slice(-2) + '</b>' +
-          '<i class="flow__line"></i>' +
-        '</span>' +
-        '<h3 class="flow__title">' + esc(p.title) + '</h3>' +
-        '<p class="flow__text">' + esc(p.text) + '</p></li>';
-    }).join('');
   }
 
   /* أول عمل منشور من هذا النوع — الربط من المعرض نفسه، بلا حقل جديد في config */
@@ -564,7 +547,7 @@
   function renderSteps() {
     $('#steps-grid').innerHTML = (CFG.steps || []).map(function (s, i) {
       return '<div class="step" data-reveal style="--d:' + (i * 80) + 'ms">' +
-        '<div class="step__n"><span class="num">' + s.n + '</span></div>' +
+        '<div class="step__n"><span class="num">' + ('0' + s.n).slice(-2) + '</span></div>' +
         '<div><h3>' + esc(s.title) + '</h3><p>' + esc(s.text) + '</p></div></div>';
     }).join('');
   }
@@ -656,6 +639,7 @@
     $('#btn-draft-clear').addEventListener('click', function () { clearDraft(); resetForm(); });
     $('#order-form').addEventListener('submit', submitOrder);
     initContentLimit();
+    initPhoneField();
     $('#btn-copy').addEventListener('click', copyIban);
     /* العودة إلى النموذج ببياناته كما هي — فتح واتساب لا يمسح شيئًا */
     $('#btn-edit-order').addEventListener('click', function () {
@@ -768,10 +752,56 @@
     }
     if (n === 3) {
       if ($('#f-name').value.trim().length < 2) bad($('#f-name'));
-      if (!normalizePhone($('#f-phone').value)) bad($('#f-phone'));
+      if (!PHONE_RE.test(cleanPhone($('#f-phone').value))) bad($('#f-phone'));
     }
     if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return ok;
+  }
+
+  /* ---------- رقم الجوال ----------
+     الصيغة المقبولة: 10 أرقام تبدأ بـ 05. الحقل يقبل الأرقام وحدها أثناء الكتابة:
+     الأرقام العربية (٠–٩ و۰–۹) تُحوَّل إلى لاتينية، والحروف والرموز والمسافات تُسقط.
+     الرقم الدولي المُلصق أو المُعبّأ تلقائيًا (‎+966 5…‎ أو ‎00966 5…‎) يُحوَّل إلى 05…
+     لأن تعبئة الجوال التلقائية تستخدم هذه الصيغة كثيرًا. */
+  var PHONE_RE = /^05\d{8}$/;
+
+  function cleanPhone(v) {
+    var d = String(v || '')
+      .replace(/[٠-٩]/g, function (c) { return String(c.charCodeAt(0) - 0x0660); })
+      .replace(/[۰-۹]/g, function (c) { return String(c.charCodeAt(0) - 0x06F0); })
+      .replace(/\D/g, '');
+    if (/^009665\d{8}/.test(d)) d = '0' + d.slice(5);
+    else if (/^9665\d{8}/.test(d)) d = '0' + d.slice(3);
+    /* أثناء كتابة رقم دولي يدويًا يُترك متسع حتى يكتمل فيُحوَّل، وإلا فالحد 10 أرقام */
+    var max = /^00/.test(d) ? 14 : (/^9/.test(d) ? 12 : 10);
+    return d.slice(0, max);
+  }
+
+  function initPhoneField() {
+    var el = $('#f-phone');
+    if (!el) return;
+    var field = el.closest('.field');
+
+    /* يُعرض الحكم بعد انتهاء معالجة الحدث كاملًا: مستمعا النموذج العامّان
+       (input و change) يمسحان خطأ الحقل، فلو عُرض فورًا لاختفى في اللحظة نفسها */
+    function judge(bad) { setTimeout(function () { if (bad) setError(field); else clearError(field); }, 0); }
+
+    el.addEventListener('input', function () {
+      var raw = el.value, clean = cleanPhone(raw);
+      if (clean !== raw) {
+        /* المؤشر يبقى بعد آخر رقم كتبه العميل بدل القفز إلى نهاية الحقل */
+        var caret = Math.min(cleanPhone(raw.slice(0, el.selectionStart || 0)).length, clean.length);
+        el.value = clean;
+        try { el.setSelectionRange(caret, caret); } catch (e) { /* تجاهل */ }
+      }
+      /* لا خطأ لرقم ما زال ناقصًا؛ عند اكتمال 10 أرقام يُحكم عليه فورًا */
+      if (clean.length >= 10) judge(!PHONE_RE.test(clean));
+    });
+
+    /* عند مغادرة الحقل: يُحكم على ما كُتب فقط — الحقل الفارغ يُترك للتحقق النهائي عند الإرسال */
+    el.addEventListener('blur', function () {
+      if (el.value) judge(!PHONE_RE.test(cleanPhone(el.value)));
+    });
   }
 
   function normalizePhone(v) {
@@ -1542,6 +1572,8 @@
     TEXT_FIELDS.forEach(function (id) {
       var e = $('#' + id); if (e && raw.text && raw.text[id] != null) e.value = raw.text[id];
     });
+    /* مسودة قديمة قد تحمل الجوال بصيغة أخرى — تُنظَّف بلا عرض خطأ */
+    var ph = $('#f-phone'); if (ph) ph.value = cleanPhone(ph.value);
     contentLimitSync();
     if (state.otherStyle) {
       $('#f-other-style').checked = true;
